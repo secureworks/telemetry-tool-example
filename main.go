@@ -47,7 +47,7 @@ var flagExtractAndValidate string
 var flagAtomicTempDir string
 var flagResultsPath string
 var flagVerbose bool
-var flagDurationSeconds int32
+var flagDurationSeconds uint
 var flagUnbatch bool
 
 func init() {
