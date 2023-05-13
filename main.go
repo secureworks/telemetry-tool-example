@@ -31,10 +31,12 @@ var (
 	gTelemetryOutputFile  = os.Stdout
 
 	gValidateState        = ExtractState{}
-	gExtractBeginTimestamp       = uint64(0)
-	gExtractEndTimestamp         = uint64(0)
+	gExtractBeginTimestamp       = int64(0)
+	gExtractEndTimestamp         = int64(0)
 	gExtractShellPid      = uint64(0)
 	gTotalMessages        = uint64(0)
+	gTimeRangeStart = int64(0)
+	gTimeRangeEnd = int64(0)
 
 	// {"name":"file_events","host
 	gRxQueryName = regexp.MustCompile(`^."name":"([\w-_\d]+).*"numerics":([\w\d]+)`)
@@ -49,12 +51,14 @@ var flagResultsPath string
 var flagVerbose bool
 var flagDurationSeconds uint
 var flagUnbatch bool
+var flagTimeRangeStr string
 
 func init() {
 	flag.StringVar(&flagExtractAndValidate, "validate", "", "extract events for specific atomic test and validate using criteria in csv")
 	flag.StringVar(&flagAtomicTempDir, "atomictemp", "", "path of temp directory used by atomic runner for test. Used to locate shell process for begin/end")
 	flag.StringVar(&flagResultsPath, "resultsdir", "", "path to write results in validate mode")
 	flag.BoolVar(&gVerbose, "verbose", false, "if true, logs more debug info")
+	flag.StringVar(&flagTimeRangeStr, "ts", "", "start,end unix timestamps")
 
 	flag.UintVar(&flagDurationSeconds, "duration", 0, "runtime. zero means run until quit") // compat
 	flag.BoolVar(&flagUnbatch, "unbatch", false, "if true, breaks batched events into individuals") // compat
@@ -127,7 +131,7 @@ func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 	return retval, nil
 }
 
-func IsGoArtStage(cmdline string, ts uint64) bool {
+func IsGoArtStage(cmdline string, ts int64) bool {
 	a := gRxGoArtStage.FindStringSubmatch(cmdline)
 	if len(a) > 3 {
 		folder := a[1]
@@ -159,15 +163,25 @@ func IncludeEvent(rawJsonString string) {
 	fmt.Println("Added", rawJsonString)
 }
 
+func InSpecifiedTimeRange(unixts int64) bool {
+	return (0 == gTimeRangeStart || unixts >= (gTimeRangeStart/1000000000)) &&
+		(0 == gTimeRangeEnd || unixts <= (gTimeRangeEnd/1000000000))
+}
+
 func HandleEvent(evt *EventWrapper) {
 	switch evt.TableName {
 	case "bpf_process_events":
 		if IsGoArtStage(evt.BpfProcessMsg.Columns.Cmdline, evt.BpfProcessMsg.UnixTime) {
 			return
 		}
-		if 0 != gExtractBeginTimestamp && 0 == gExtractEndTimestamp {
+		if 0 != gExtractBeginTimestamp && 0 == gExtractEndTimestamp && InSpecifiedTimeRange(evt.BpfProcessMsg.UnixTime) {
 			IncludeEvent(evt.RawJsonStr)
 		}
+	case "file_events":
+		if InSpecifiedTimeRange(evt.INotifyFileMsg.UnixTime) {
+			IncludeEvent(evt.RawJsonStr)
+		}
+
 	default:
 	}
 
@@ -203,6 +217,18 @@ func processFile(path string) {
     }
 }
 
+func ParseTimeRangeArg(s string, tstart *int64, tend *int64) {
+	if 0 == len(s) {
+		return
+	}
+	a := strings.SplitN(s,",",2)
+	if len(a) != 2 {
+		return
+	}
+	*tstart = ToInt64(a[0])
+	*tend = ToInt64(a[1])
+}
+
 func main() {
 	flag.Parse()
 
@@ -220,21 +246,8 @@ func main() {
 		}
 	}
 
-/*
-	//line := `{"name":"file_events","hostIdentifier":"ubuntu","calendarTime":"Mon May  8 22:15:45 2023 UTC","unixTime":1683584145,"epoch":0,"counter":105,"numerics":false,"decorations":{"host_uuid":"48754d56-277e-7cb6-dd7b-f58673f0c7fd","username":"develop"},"columns":{"action":"CREATED","atime":"","category":"custom_category","ctime":"","gid":"","hashed":"0","inode":"","md5":"","mode":"","mtime":"","sha1":"","sha256":"","size":"","target_path":"/tmp/passwd.zip","time":"1683584089","transaction_id":"0","uid":""},"action":"added"}`
-	//line := `{"name":"bpf_process_events","hostIdentifier":"ubuntu","calendarTime":"Mon May  8 22:15:00 2023 UTC","unixTime":1683584100,"epoch":0,"counter":57,"numerics":false,"decorations":{"host_uuid":"48754d56-277e-7cb6-dd7b-f58673f0c7fd","username":"develop"},"columns":{"cid":"10198","cmdline":"/usr/bin/python3 -c 'from zipfile import ZipFile; ZipFile('/tmp/passwd.zip', mode='w').write('/etc/passwd')'","cwd":"/home/amscwx","duration":"132369","exit_code":"0","gid":"0","ntime":"92306415722842","parent":"20478","path":"/usr/bin/python3","pid":"20481","probe_error":"0","syscall":"exec","tid":"20481","uid":"1002"},"action":"added"}`
-	line := `{"name":"bpf_process_events","hostIdentifier":"ubuntu","calendarTime":"Mon May  8 22:15:00 2023 UTC","unixTime":1683584100,"epoch":0,"counter":57,"numerics":false,"decorations":{"host_uuid":"48754d56-277e-7cb6-dd7b-f58673f0c7fd","username":"develop"},"columns":{"cid":"10198","cmdline":"bash /tmp/artwork-T1560.002_3-458617291/goart-T1560.002-test.bash","cwd":"/home/amscwx","duration":"130942","exit_code":"0","gid":"0","ntime":"92306409329558","parent":"20468","path":"/usr/bin/bash","pid":"20478","probe_error":"0","syscall":"exec","tid":"20478","uid":"1002"},"action":"added"}`
+	ParseTimeRangeArg(flagTimeRangeStr, &gTimeRangeStart, &gTimeRangeEnd)
 
-	evt,err := ParseEvent(line)
-	if err != nil {
-		fmt.Println(err)		
-	}
-	if evt == nil {
-		return
-	}
-	fmt.Println(evt)
-	HandleEvent(evt)
-*/
 	if flagExtractAndValidate != "" {
 		var err error
 		data := []byte{}
@@ -295,8 +308,8 @@ func main() {
 	// output
 
 	if flagExtractAndValidate != "" {
-		gValidateState.StartTime = gExtractBeginTimestamp
-		gValidateState.EndTime = gExtractEndTimestamp
+		gValidateState.StartTime = uint64(gExtractBeginTimestamp)
+		gValidateState.EndTime = uint64(gExtractEndTimestamp)
 		gValidateState.TotalEvents = gTotalMessages
 
 		// TODO: EvaluateProcessCorrelations()

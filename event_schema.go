@@ -37,7 +37,7 @@ type BpfProcessEventColumnsStr struct {
 type BpfProcessEvent struct {
 	Name string                 `json:"name"`
 	HostId string               `json:"hostIdentifier"`
-	UnixTime uint64             `json:"unixTime"`
+	UnixTime int64             `json:"unixTime"`
 	CalendarTime string         `json:"calendarTime"`
 	Action string               `json:"action"`
 	HasNumerics bool            `json:"numerics"`
@@ -46,7 +46,7 @@ type BpfProcessEvent struct {
 type BpfProcessEventStr struct {
 	Name string                 `json:"name"`
 	HostId string               `json:"hostIdentifier"`
-	UnixTime uint64             `json:"unixTime"`
+	UnixTime int64             `json:"unixTime"`
 	CalendarTime string         `json:"calendarTime"`
 	Action string               `json:"action"`
 	HasNumerics bool            `json:"numerics"`
@@ -161,7 +161,7 @@ type INotifyEventColumns struct {
 type INotifyFileEvent struct {
 	Name string                 `json:"name"`
 	HostId string               `json:"hostIdentifier"`
-	UnixTime uint64             `json:"unixTime"`
+	UnixTime int64             `json:"unixTime"`
 	CalendarTime string         `json:"calendarTime"`
 	Action string               `json:"action"`
 	HasNumerics bool            `json:"numerics"`
@@ -178,7 +178,7 @@ type INotifyEventColumnsStr struct {
 type INotifyFileEventStr struct {
 	Name string                 `json:"name"`
 	HostId string               `json:"hostIdentifier"`
-	UnixTime uint64             `json:"unixTime"`
+	UnixTime int64             `json:"unixTime"`
 	CalendarTime string         `json:"calendarTime"`
 	Action string               `json:"action"`
 	HasNumerics bool            `json:"numerics"`
