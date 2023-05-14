@@ -12,6 +12,7 @@ import (
 	//"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	//"path"
 	//"path/filepath"
 	"regexp"
@@ -175,16 +176,6 @@ func IncludeEvent(rawJsonString string, simpleEvt *SimpleEvent) {
 }
 
 func GetTsFromUptime(uptimeNanos uint64) int64 {
-	if 0 == gSystemStartTime {
-		t, _ := time.Parse("2006-01-02 15:04:05", "2023-05-07 20:54:01") // TODO: get this from --ts param
-		gSystemStartTime = uint64(t.UnixNano())
-		//t2 := t.Add(time.Nanosecond * time.Duration(uptimeNanos))
-		//fmt.Println(t2, t2.UnixNano(), gSystemStartTime + uptimeNanos)
-		//fmt.Println("StartTime", t)
-	}
-
-//	fmt.Println("GetTsFromUptime", gSystemStartTime, uptimeNanos)
-
 	return int64(gSystemStartTime + uptimeNanos)
 }
 
@@ -258,11 +249,35 @@ func ParseTimeRangeArg(s string, tstart *int64, tend *int64) {
 	if len(a) != 2 {
 		return
 	}
-	*tstart = ToInt64(a[0]) / 1000000000 * 1000000000
-	*tend = ToInt64(a[1]) / 1000000000 * 1000000000 + 1000000000
+	*tstart = ToInt64(a[0]) - 1000000000
+	*tend = ToInt64(a[1]) + 1000000000
+}
+
+func GetSystemStartTimestamp() uint64 {
+	loc, err := time.LoadLocation("Local")
+	if err != nil {
+		fmt.Println("ERROR: unable to load local TZ", err)
+		return 0
+	}
+	cmd := exec.Command("uptime","-s")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println("ERROR: unable to run 'uptime -s'", err)
+		return 0
+	}
+	uptimeStr := strings.TrimSpace(string(output))
+	if gVerbose {
+		fmt.Printf("system boot time (uptime -s):'%s'\n", uptimeStr)
+	}
+	t, _ := time.ParseInLocation("2006-01-02 15:04:05", uptimeStr, loc)
+	return uint64(t.UnixNano())
 }
 
 func main() {
+	if runtime.GOOS == "linux" {
+		// bpf_process_events have ntime relative to uptime
+		gSystemStartTime = GetSystemStartTimestamp()
+	}
 	flag.Parse()
 
 	files := flag.Args()
@@ -382,6 +397,8 @@ func main() {
 			fmt.Println("ERROR: unable to write file", outPath, err)
 		}
 
+		os.Exit(int(StatusDelegateValidation))
+/*
 		// set exit code if telemetry missing some expected items
 
 		if gValidateState.Coverage == 1.0 {
@@ -390,6 +407,6 @@ func main() {
 			os.Exit(int(StatusValidateFail))
 		}
 		os.Exit(int(StatusValidatePartial))
+ */
 	}
-
 }

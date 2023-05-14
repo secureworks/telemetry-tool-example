@@ -46,12 +46,13 @@ type SimpleFileAction string
 
 const (
     SimpleFileActionUnknown SimpleFileAction = "?"
-    SimpleFileActionOpenRead    SimpleFileAction     = "OPEN_READ"       // OPEN readonly or READ
-    SimpleFileActionOpenWrite   SimpleFileAction     = "OPEN_WRITE"      // OPEN to modify or CREATE, WRITE
+    SimpleFileActionOpenRead    SimpleFileAction     = "OPEN_READ"       // OPEN readonly or READ/ACCESS
+    SimpleFileActionOpenWrite   SimpleFileAction     = "OPEN_WRITE"      // OPEN to modify or WRITE/UPDATE
     SimpleFileActionChmod       SimpleFileAction     = "CHMOD"
     SimpleFileActionChown       SimpleFileAction     = "CHOWN"
     SimpleFileActionDelete      SimpleFileAction     = "DELETE"
     SimpleFileActionTruncate    SimpleFileAction     = "TRUNC"
+    SimpleFileActionCreate      SimpleFileAction     = "CREATE"
 )
 
 type SimpleFileFields struct {

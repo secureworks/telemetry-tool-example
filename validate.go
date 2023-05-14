@@ -54,19 +54,20 @@ type TestStatus int
 
 const (
     StatusUnknown TestStatus = iota
-    StatusMiscError
-    StatusAtomicNotFound
-    StatusCriteriaNotFound
-    StatusSkipped
-    StatusInvalidArguments
-    StatusRunnerUnknownFailure
-    StatusPreReqFail
-    StatusTestFail
-    StatusTestSuccess
-    StatusTelemetryToolFailure          // these codes
-    StatusValidateFail
-    StatusValidatePartial
-    StatusValidateSuccess
+    StatusMiscError             // 1
+    StatusAtomicNotFound        // 2
+    StatusCriteriaNotFound      // 3
+    StatusSkipped               // 4
+    StatusInvalidArguments      // 5
+    StatusRunnerFailure         // 6
+    StatusPreReqFail            // 7
+    StatusTestFail              // 8
+    StatusTestSuccess           // 9
+    StatusTelemetryToolFailure  // 10
+    StatusValidateFail          // 11
+    StatusValidatePartial       // 12
+    StatusValidateSuccess       // 13
+    StatusDelegateValidation    // 14
 )
 
 func CheckMatch(haystack,op,needle string) bool {

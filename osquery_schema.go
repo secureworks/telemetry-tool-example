@@ -240,12 +240,14 @@ func (t *INotifyFileEvent) ToSimple() *SimpleEvent {
 
 	switch t.Columns.Action {
 	case "CREATED" :
-		fields.Action = SimpleFileActionOpenWrite
+		fields.Action = SimpleFileActionCreate
 	case "UPDATED" :
 		fields.Action = SimpleFileActionOpenWrite
 	case "OPENED" :
+		ret.EventType = SimpleSchemaFileRead
 		fields.Action = SimpleFileActionOpenRead
 	case "ACCESSED" :
+		ret.EventType = SimpleSchemaFileRead
 		fields.Action = SimpleFileActionOpenRead
 	case "DELETED" :
 		fields.Action = SimpleFileActionDelete
