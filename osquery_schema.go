@@ -249,6 +249,8 @@ func (t *INotifyFileEvent) ToSimple() *SimpleEvent {
 		fields.Action = SimpleFileActionOpenRead
 	case "DELETED" :
 		fields.Action = SimpleFileActionDelete
+	case "ATTRIBUTES_MODIFIED":
+		fields.Action = SimpleFileActionChmod
 	default:
 		fields.Action = SimpleFileActionUnknown
 	}
