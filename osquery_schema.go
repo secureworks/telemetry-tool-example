@@ -1,5 +1,11 @@
 package main
 
+/**
+ * Structs for parsing osquery event table schema JSON
+ * Since events can have string or numeric values, there
+ * is special handling and conversion to get the typed instances.
+ */
+
 import (
 	"strconv"
 )
@@ -88,7 +94,6 @@ func (t *BpfProcessEventStr) ToTyped() *BpfProcessEvent {
 	return ret
 }
 
-
 //{"name":"proc_events","hostIdentifier":"ubuntu","calendarTime":"Mon May  8 22:15:00 2023 UTC","unixTime":1683584100,
 //  "epoch":0,"counter":57,"numerics":false,"decorations":{"host_uuid":"48754d56-277e-7cb6-dd7b-f58673f0c7fd","username":"develop"},
 // "columns":{"cid":"10198",
@@ -156,6 +161,7 @@ type INotifyEventColumns struct {
 	Uid int64            `json:"uid"`
 	Gid int64            `json:"gid"`
 	Action string        `json:"action"`
+	UnixTime int64       `json:"time"`
 }
 
 type INotifyFileEvent struct {
@@ -173,6 +179,7 @@ type INotifyEventColumnsStr struct {
 	Uid string           `json:"uid"`
 	Gid string           `json:"gid"`
 	Action string        `json:"action"`
+	UnixTime string      `json:"time"`
 }
 
 type INotifyFileEventStr struct {
@@ -191,6 +198,7 @@ func (t *INotifyFileEventStr) ToTyped() *INotifyFileEvent {
 	ret.Columns.Action = t.Columns.Action
 	ret.Columns.Uid = ToInt64(t.Columns.Uid)
 	ret.Columns.Gid = ToInt64(t.Columns.Gid)
+	ret.Columns.UnixTime = ToInt64(t.Columns.UnixTime)
 	return ret
 }
 
@@ -199,4 +207,52 @@ type EventWrapper struct {
 	RawJsonStr       string
 	INotifyFileMsg   *INotifyFileEvent
 	BpfProcessMsg    *BpfProcessEvent
+}
+
+// ================================== conversions to simple schema
+
+/*
+ * return a simplified event instance
+ */
+func (t *BpfProcessEvent) ToSimple() *SimpleEvent {
+	ret := &SimpleEvent{}
+	ret.EventType = SimpleSchemaProcess
+	ret.Timestamp = GetTsFromUptime(t.Columns.UptimeNanos)
+
+	fields := &SimpleProcessFields{}
+	fields.Cmdline = t.Columns.Cmdline
+	fields.ExePath = t.Columns.Path
+	fields.Pid = t.Columns.Pid
+	fields.ParentPid = t.Columns.ParentPid
+
+	ret.ProcessFields = fields
+	return ret
+}
+
+func (t *INotifyFileEvent) ToSimple() *SimpleEvent {
+	ret := &SimpleEvent{}
+	ret.EventType = SimpleSchemaFilemod            // Todo: read-only as well?
+	ret.Timestamp = t.Columns.UnixTime*1000000000
+
+	fields := &SimpleFileFields{}
+	fields.TargetPath = t.Columns.TargetPath
+	//fields.Uid = t.Columns.Uid
+
+	switch t.Columns.Action {
+	case "CREATED" :
+		fields.Action = SimpleFileActionOpenWrite
+	case "UPDATED" :
+		fields.Action = SimpleFileActionOpenWrite
+	case "OPENED" :
+		fields.Action = SimpleFileActionOpenRead
+	case "ACCESSED" :
+		fields.Action = SimpleFileActionOpenRead
+	case "DELETED" :
+		fields.Action = SimpleFileActionDelete
+	default:
+		fields.Action = SimpleFileActionUnknown
+	}
+
+	ret.FileFields = fields
+	return ret
 }

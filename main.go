@@ -17,7 +17,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-	//"time"
+	"time"
 )
 
 const (
@@ -29,6 +29,7 @@ var (
 	l                     = log.New(os.Stderr, "telemcat ", log.LstdFlags)
 	gVerbose = false
 	gTelemetryOutputFile  = os.Stdout
+	gSimpleTelemetryOutputFile  = os.Stdout
 
 	gValidateState        = ExtractState{}
 	gExtractBeginTimestamp       = int64(0)
@@ -37,6 +38,7 @@ var (
 	gTotalMessages        = uint64(0)
 	gTimeRangeStart = int64(0)
 	gTimeRangeEnd = int64(0)
+	gSystemStartTime = uint64(0)
 
 	// {"name":"file_events","host
 	gRxQueryName = regexp.MustCompile(`^."name":"([\w-_\d]+).*"numerics":([\w\d]+)`)
@@ -60,7 +62,7 @@ func init() {
 	flag.BoolVar(&gVerbose, "verbose", false, "if true, logs more debug info")
 	flag.StringVar(&flagTimeRangeStr, "ts", "", "start,end unix timestamps")
 
-	flag.UintVar(&flagDurationSeconds, "duration", 0, "runtime. zero means run until quit") // compat
+	flag.UintVar(&flagDurationSeconds, "duration", 0, "time to wait for telemetry") // compat
 	flag.BoolVar(&flagUnbatch, "unbatch", false, "if true, breaks batched events into individuals") // compat
 }
 
@@ -131,7 +133,7 @@ func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 	return retval, nil
 }
 
-func IsGoArtStage(cmdline string, ts int64) bool {
+func IsGoArtStage(cmdline string, tsNs int64) bool {
 	a := gRxGoArtStage.FindStringSubmatch(cmdline)
 	if len(a) > 3 {
 		folder := a[1]
@@ -144,42 +146,73 @@ func IsGoArtStage(cmdline string, ts int64) bool {
 			// is this the target test?
 			if gValidateState.TestData.Technique == technique {
 				tsttok := fmt.Sprintf("%s_%d", gValidateState.TestData.Technique, gValidateState.TestData.TestIndex)
-				fmt.Println("contains check", folder, tsttok)
+				fmt.Println("contains check", folder, tsttok, tsNs)
 				if strings.Contains(folder, tsttok) {
-					gExtractBeginTimestamp = ts
+					gExtractBeginTimestamp = tsNs
+					gExtractEndTimestamp = 0
 				}
 			}
 		} else if 0 != gExtractBeginTimestamp {
-			gExtractEndTimestamp = ts
+			gExtractEndTimestamp = tsNs
 		}
 		return true
 	}
 	return false
 }
 
-func IncludeEvent(rawJsonString string) {
+func IncludeEvent(rawJsonString string, simpleEvt *SimpleEvent) {
 	gTotalMessages += 1
 	fmt.Fprintln(gTelemetryOutputFile, rawJsonString)
-	fmt.Println("Added", rawJsonString)
+
+	jb, err := json.Marshal(simpleEvt)
+	if err != nil {
+		fmt.Println("failed to encode EVENT json", err, simpleEvt)
+	} else {
+		fmt.Fprintln(gSimpleTelemetryOutputFile, string(jb))
+	}
+
+	//fmt.Println("Added", rawJsonString)
 }
 
-func InSpecifiedTimeRange(unixts int64) bool {
+func GetTsFromUptime(uptimeNanos uint64) int64 {
+	if 0 == gSystemStartTime {
+		t, _ := time.Parse("2006-01-02 15:04:05", "2023-05-07 20:54:01") // TODO: get this from --ts param
+		gSystemStartTime = uint64(t.UnixNano())
+		//t2 := t.Add(time.Nanosecond * time.Duration(uptimeNanos))
+		//fmt.Println(t2, t2.UnixNano(), gSystemStartTime + uptimeNanos)
+		//fmt.Println("StartTime", t)
+	}
+
+//	fmt.Println("GetTsFromUptime", gSystemStartTime, uptimeNanos)
+
+	return int64(gSystemStartTime + uptimeNanos)
+}
+
+func InSpecifiedTimeRangeSec(unixts int64) bool {
+	//fmt.Println(unixts, gTimeRangeStart/1000000000, gTimeRangeEnd/1000000000)
 	return (0 == gTimeRangeStart || unixts >= (gTimeRangeStart/1000000000)) &&
 		(0 == gTimeRangeEnd || unixts <= (gTimeRangeEnd/1000000000))
+}
+
+func InSpecifiedTimeRangeNs(unixts int64) bool {
+	//fmt.Println(unixts, gTimeRangeStart, gTimeRangeEnd)
+	return (0 == gTimeRangeStart || unixts >= (gTimeRangeStart)) &&
+		(0 == gTimeRangeEnd || unixts <= (gTimeRangeEnd))
 }
 
 func HandleEvent(evt *EventWrapper) {
 	switch evt.TableName {
 	case "bpf_process_events":
-		if IsGoArtStage(evt.BpfProcessMsg.Columns.Cmdline, evt.BpfProcessMsg.UnixTime) {
+		evtTs := GetTsFromUptime(evt.BpfProcessMsg.Columns.UptimeNanos)
+		if IsGoArtStage(evt.BpfProcessMsg.Columns.Cmdline, evtTs) {
 			return
 		}
-		if 0 != gExtractBeginTimestamp && 0 == gExtractEndTimestamp && InSpecifiedTimeRange(evt.BpfProcessMsg.UnixTime) {
-			IncludeEvent(evt.RawJsonStr)
+		if 0 != gExtractBeginTimestamp && 0 == gExtractEndTimestamp && InSpecifiedTimeRangeNs(evtTs) {
+			IncludeEvent(evt.RawJsonStr, evt.BpfProcessMsg.ToSimple())
 		}
 	case "file_events":
-		if InSpecifiedTimeRange(evt.INotifyFileMsg.UnixTime) {
-			IncludeEvent(evt.RawJsonStr)
+		if InSpecifiedTimeRangeSec(evt.INotifyFileMsg.Columns.UnixTime) {
+			IncludeEvent(evt.RawJsonStr, evt.INotifyFileMsg.ToSimple())
 		}
 
 	default:
@@ -225,8 +258,8 @@ func ParseTimeRangeArg(s string, tstart *int64, tend *int64) {
 	if len(a) != 2 {
 		return
 	}
-	*tstart = ToInt64(a[0])
-	*tend = ToInt64(a[1])
+	*tstart = ToInt64(a[0]) / 1000000000 * 1000000000
+	*tend = ToInt64(a[1]) / 1000000000 * 1000000000 + 1000000000
 }
 
 func main() {
@@ -276,8 +309,21 @@ func main() {
 			fmt.Println("ERROR: unable to create outfile",outpath, err)
 			os.Exit(2)
 		}
+
+		outpath = flagResultsPath + "/simple_telemetry.json"
+		gSimpleTelemetryOutputFile,err = os.OpenFile(outpath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			fmt.Println("ERROR: unable to create outfile",outpath, err)
+			os.Exit(2)
+		}
 	}
 	defer gTelemetryOutputFile.Close()
+	defer gSimpleTelemetryOutputFile.Close()
+
+	if flagDurationSeconds > 0 {
+		time.Sleep(time.Duration(flagDurationSeconds) * time.Second)
+	}
+
 
 	// read in osqueryd.results file
 

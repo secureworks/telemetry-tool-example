@@ -1,4 +1,9 @@
 all: telemtool
 
-telemtool: *.go
-	go build -o telemtool *.go
+EXENAME=telemtool
+
+${EXENAME}: *.go
+	go build -o ${EXENAME} *.go
+
+clean:
+	rm -f ${EXENAME}
