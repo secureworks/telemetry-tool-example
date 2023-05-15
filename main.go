@@ -134,7 +134,18 @@ func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 	return retval, nil
 }
 
-func IsGoArtStage(cmdline string, tsNs int64) bool {
+/**
+ * IsGoArtStage will check the commandline to see if it matches
+ * a goartrun execution.  Specifically for the 'test' stage.  Any
+ * process events after the run of that test script and before the
+ * next goartrun stage is part of the test.  While we have
+ * gTimeRangeStart and gTimeRangeEnd as a rough +/- 1-second range,
+ * this helps narrow down more so we don't have process events
+ * from prereq, setup, cleanup stages of a test.
+ *
+ * Side-effects: will set gExtractBeginTimestamp and gExtractEndTimestamp
+ */
+func IsGoArtStage(cmdline string, tsNs int64, targetTechnique string, testIndex uint) bool {
 	a := gRxGoArtStage.FindStringSubmatch(cmdline)
 	if len(a) > 3 {
 		folder := a[1]
@@ -145,8 +156,8 @@ func IsGoArtStage(cmdline string, tsNs int64) bool {
 		}
 		if "test" == stageName {
 			// is this the target test?
-			if gValidateState.TestData.Technique == technique {
-				tsttok := fmt.Sprintf("%s_%d", gValidateState.TestData.Technique, gValidateState.TestData.TestIndex)
+			if technique == targetTechnique {
+				tsttok := fmt.Sprintf("%s_%d", technique, testIndex)
 				fmt.Println("contains check", folder, tsttok, tsNs)
 				if strings.Contains(folder, tsttok) {
 					gExtractBeginTimestamp = tsNs
@@ -161,6 +172,10 @@ func IsGoArtStage(cmdline string, tsNs int64) bool {
 	return false
 }
 
+/**
+ * IncludeEvent will write the event telemetry.json file.
+ * If in delegation mode, will write to the simple_telemetry.json file.
+ */
 func IncludeEvent(rawJsonString string, simpleEvt *SimpleEvent) {
 	gTotalMessages += 1
 	fmt.Fprintln(gTelemetryOutputFile, rawJsonString)
@@ -175,6 +190,10 @@ func IncludeEvent(rawJsonString string, simpleEvt *SimpleEvent) {
 	//fmt.Println("Added", rawJsonString)
 }
 
+/**
+ * GetTsFromUptime returns a nanosecond timestamp from uptime-nano
+ * value.  This assumes that gSystemStartTime was set on startup.
+ */
 func GetTsFromUptime(uptimeNanos uint64) int64 {
 	return int64(gSystemStartTime + uptimeNanos)
 }
@@ -195,7 +214,7 @@ func HandleEvent(evt *EventWrapper) {
 	switch evt.TableName {
 	case "bpf_process_events":
 		evtTs := GetTsFromUptime(evt.BpfProcessMsg.Columns.UptimeNanos)
-		if IsGoArtStage(evt.BpfProcessMsg.Columns.Cmdline, evtTs) {
+		if IsGoArtStage(evt.BpfProcessMsg.Columns.Cmdline, evtTs, gValidateState.TestData.Technique, gValidateState.TestData.TestIndex) {
 			return
 		}
 		if 0 != gExtractBeginTimestamp && 0 == gExtractEndTimestamp && InSpecifiedTimeRangeNs(evtTs) {
@@ -369,44 +388,6 @@ func main() {
 	// output
 
 	if flagExtractAndValidate != "" {
-		gValidateState.StartTime = uint64(gExtractBeginTimestamp)
-		gValidateState.EndTime = uint64(gExtractEndTimestamp)
-		gValidateState.TotalEvents = gTotalMessages
-
-		// TODO: EvaluateProcessCorrelations()
-
-		// output summary
-
-		jb, err := json.MarshalIndent(gValidateState,"","  ")
-		if err != nil {
-			l.Println("failed to encode validation state json", err)
-		} else {
-
-			outPath := flagResultsPath + "/validate_summary.json"
-			err = os.WriteFile(outPath, jb, 0644)
-			if err != nil {
-				fmt.Println("ERROR: unable to write file", outPath, err)
-			}
-		}
-
-		// output match string
-		s := GetTelemTypes(& gValidateState.TestData)
-		outPath := flagResultsPath + "/match_string.txt"
-		err = os.WriteFile(outPath, []byte(s), 0644)
-		if err != nil {
-			fmt.Println("ERROR: unable to write file", outPath, err)
-		}
-
 		os.Exit(int(StatusDelegateValidation))
-/*
-		// set exit code if telemetry missing some expected items
-
-		if gValidateState.Coverage == 1.0 {
-			os.Exit(int(StatusValidateSuccess))
-		} else if gValidateState.Coverage == 0.0 {
-			os.Exit(int(StatusValidateFail))
-		}
-		os.Exit(int(StatusValidatePartial))
- */
 	}
 }

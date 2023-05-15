@@ -53,6 +53,7 @@ const (
     SimpleFileActionDelete      SimpleFileAction     = "DELETE"
     SimpleFileActionTruncate    SimpleFileAction     = "TRUNC"
     SimpleFileActionCreate      SimpleFileAction     = "CREATE"
+    SimpleFileActionRename      SimpleFileAction     = "RENAME"
 )
 
 type SimpleFileFields struct {
