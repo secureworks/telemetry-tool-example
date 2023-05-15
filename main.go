@@ -1,20 +1,14 @@
 package main
 
 import (
-	//"bytes"
 	"bufio"
-	//"encoding/binary"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
-	//"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
-	//"path"
-	//"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
@@ -32,10 +26,6 @@ var (
 	gTelemetryOutputFile  = os.Stdout
 	gSimpleTelemetryOutputFile  = os.Stdout
 
-	gValidateState        = ExtractState{}
-	gExtractBeginTimestamp       = int64(0)
-	gExtractEndTimestamp         = int64(0)
-	gExtractShellPid      = uint64(0)
 	gTotalMessages        = uint64(0)
 	gTimeRangeStart = int64(0)
 	gTimeRangeEnd = int64(0)
@@ -43,9 +33,6 @@ var (
 
 	// {"name":"file_events","host
 	gRxQueryName = regexp.MustCompile(`^."name":"([\w-_\d]+).*"numerics":([\w\d]+)`)
-	// sh /tmp/artwork-T1560.002_3-458617291/goart-T1560.002-test.bash
-	gRxGoArtStage = regexp.MustCompile(`sh /tmp/(artwork-T[\w-_\.\d]+)/goart-(T[\d\._]+)-(\w+)`)
-
 )
 var flagTelemPath string
 var flagExtractAndValidate string
@@ -135,44 +122,6 @@ func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 }
 
 /**
- * IsGoArtStage will check the commandline to see if it matches
- * a goartrun execution.  Specifically for the 'test' stage.  Any
- * process events after the run of that test script and before the
- * next goartrun stage is part of the test.  While we have
- * gTimeRangeStart and gTimeRangeEnd as a rough +/- 1-second range,
- * this helps narrow down more so we don't have process events
- * from prereq, setup, cleanup stages of a test.
- *
- * Side-effects: will set gExtractBeginTimestamp and gExtractEndTimestamp
- */
-func IsGoArtStage(cmdline string, tsNs int64, targetTechnique string, testIndex uint) bool {
-	a := gRxGoArtStage.FindStringSubmatch(cmdline)
-	if len(a) > 3 {
-		folder := a[1]
-		technique := a[2]
-		stageName := a[3]
-		if gVerbose {
-			fmt.Println("Found stage", stageName,"for", technique,"folder:",folder)
-		}
-		if "test" == stageName {
-			// is this the target test?
-			if technique == targetTechnique {
-				tsttok := fmt.Sprintf("%s_%d", technique, testIndex)
-				fmt.Println("contains check", folder, tsttok, tsNs)
-				if strings.Contains(folder, tsttok) {
-					gExtractBeginTimestamp = tsNs
-					gExtractEndTimestamp = 0
-				}
-			}
-		} else if 0 != gExtractBeginTimestamp {
-			gExtractEndTimestamp = tsNs
-		}
-		return true
-	}
-	return false
-}
-
-/**
  * IncludeEvent will write the event telemetry.json file.
  * If in delegation mode, will write to the simple_telemetry.json file.
  */
@@ -214,10 +163,7 @@ func HandleEvent(evt *EventWrapper) {
 	switch evt.TableName {
 	case "bpf_process_events":
 		evtTs := GetTsFromUptime(evt.BpfProcessMsg.Columns.UptimeNanos)
-		if IsGoArtStage(evt.BpfProcessMsg.Columns.Cmdline, evtTs, gValidateState.TestData.Technique, gValidateState.TestData.TestIndex) {
-			return
-		}
-		if 0 != gExtractBeginTimestamp && 0 == gExtractEndTimestamp && InSpecifiedTimeRangeNs(evtTs) {
+		if InSpecifiedTimeRangeNs(evtTs) {
 			IncludeEvent(evt.RawJsonStr, evt.BpfProcessMsg.ToSimple())
 		}
 	case "file_events":
@@ -240,7 +186,6 @@ func processFile(path string) {
     scanner := bufio.NewScanner(file)
     for scanner.Scan() {
     	line := scanner.Text()
-        //fmt.Println(line)
 
 		evt,err := ParseEvent(line)
 		if err != nil {
@@ -249,10 +194,7 @@ func processFile(path string) {
 		if evt == nil {
 			continue
 		}
-		//fmt.Println(evt)
 		HandleEvent(evt)
-
-        //break
     }
 
     if err := scanner.Err(); err != nil {
@@ -317,25 +259,6 @@ func main() {
 
 	if flagExtractAndValidate != "" {
 		var err error
-		data := []byte{}
-
-		if flagExtractAndValidate == "-" {
-			data, err = io.ReadAll(os.Stdin)
-		} else {
-			data, err = os.ReadFile(flagExtractAndValidate)
-		}
-
-		if err != nil {
-			fmt.Println("IO error",err," file:", flagExtractAndValidate)
-			os.Exit(2)
-		}
-		
-		err = json.Unmarshal(data, &gValidateState.TestData)
-		if err != nil {
-			fmt.Println("Error parsing validation criteria JSON",err)
-			os.Exit(2)
-		}
-		fmt.Println(gValidateState.TestData)
 
 		outpath := flagResultsPath + "/telemetry.json"
 		gTelemetryOutputFile,err = os.OpenFile(outpath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
