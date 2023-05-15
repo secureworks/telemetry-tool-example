@@ -58,6 +58,8 @@ func init() {
 func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 	retval := &EventWrapper{}
 
+	// first get query 'name' and 'numerics' fields in string
+
 	a := gRxQueryName.FindStringSubmatch(rawJsonString)
 	if len(a) < 3 {
 		return retval, errors.New("unable to determine query name: " + rawJsonString[0:64])
@@ -69,7 +71,7 @@ func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 	}
 	retval.RawJsonStr = rawJsonString
 
-	//fmt.Println("table name:",retval.TableName, a[2])
+	// we only care about events tables
 
 	if !strings.HasSuffix(retval.TableName, "_events") {
 		if gVerbose {
@@ -78,6 +80,11 @@ func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 		return nil, nil
 	}
 	var err error
+
+	// parse known event table schemas
+	// Unfortunately, we require 'name' to match actual table_name.
+	// Since numerics can be string or numbers, need to parse them
+	// separately and convert to typed
 
 	switch retval.TableName {
 	case "file_events":
@@ -111,6 +118,21 @@ func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 			retval.BpfProcessMsg = msg.ToTyped()
 		}
 		//fmt.Println(*retval.BpfProcessMsg)
+	case "bpf_socket_events":
+		if hasNumerics {
+			msg := &BpfSocketEvent{}
+			if err = json.Unmarshal([]byte(rawJsonString), msg); err != nil {
+				return nil, err
+			}
+			retval.BpfSocketMsg = msg
+
+		} else {
+			msg := &BpfSocketEventStr{}
+			if err = json.Unmarshal([]byte(rawJsonString), msg); err != nil {
+				return nil, err
+			}
+			retval.BpfSocketMsg = msg.ToTyped()
+		}
 	default:
 		if gVerbose {
 			fmt.Println("Unsupported event table:", retval.TableName)
@@ -166,6 +188,11 @@ func HandleEvent(evt *EventWrapper) {
 		if InSpecifiedTimeRangeNs(evtTs) {
 			IncludeEvent(evt.RawJsonStr, evt.BpfProcessMsg.ToSimple())
 		}
+	case "bpf_socket_events":
+		evtTs := GetTsFromUptime(evt.BpfSocketMsg.Columns.UptimeNanos)
+		if InSpecifiedTimeRangeNs(evtTs) {
+			IncludeEvent(evt.RawJsonStr, evt.BpfSocketMsg.ToSimple())
+		}
 	case "file_events":
 		if InSpecifiedTimeRangeSec(evt.INotifyFileMsg.Columns.UnixTime) {
 			IncludeEvent(evt.RawJsonStr, evt.INotifyFileMsg.ToSimple())
@@ -214,7 +241,10 @@ func ParseTimeRangeArg(s string, tstart *int64, tend *int64) {
 	*tend = ToInt64(a[1]) + 1000000000
 }
 
-func GetSystemStartTimestamp() uint64 {
+/*
+ * Get the timestamp for which uptimes are relative to
+ */
+func GetLinuxStartTimestamp() uint64 {
 	loc, err := time.LoadLocation("Local")
 	if err != nil {
 		fmt.Println("ERROR: unable to load local TZ", err)
@@ -237,7 +267,7 @@ func GetSystemStartTimestamp() uint64 {
 func main() {
 	if runtime.GOOS == "linux" {
 		// bpf_process_events have ntime relative to uptime
-		gSystemStartTime = GetSystemStartTimestamp()
+		gSystemStartTime = GetLinuxStartTimestamp()
 	}
 	flag.Parse()
 

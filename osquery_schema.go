@@ -7,8 +7,18 @@ package main
  */
 
 import (
+	"fmt"
 	"strconv"
 )
+
+//{"name":"bpf_process_events","hostIdentifier":"ubuntu","calendarTime":"Mon May  8 22:15:00 2023 UTC","unixTime":1683584100,
+//  "epoch":0,"counter":57,"numerics":false,"decorations":{"host_uuid":"48754d56-277e-7cb6-dd7b-f58673f0c7fd","username":"develop"},
+// "columns":{"cid":"10198",
+//   "cmdline":"bash /tmp/artwork-T1560.002_3-458617291/goart-T1560.002-test.bash",
+//   "cwd":"/home/amscwx","duration":"130942",
+//   "exit_code":"0","gid":"0","ntime":"92306409329558",
+//   "parent":"20468","path":"/usr/bin/bash","pid":"20478",
+//   "probe_error":"0","syscall":"exec","tid":"20478","uid":"1002"},"action":"added"}
 
 type BpfProcessEventColumns struct {
 	Cmdline string       `json:"cmdline"`
@@ -71,6 +81,10 @@ func ToUInt64(valstr string) uint64 {
 	i := ToInt64(valstr)
 	return uint64(i)
 }
+func ToInt(valstr string) int {
+	i := ToInt64(valstr)
+	return int(i)
+}
 
 func ToInt32(valstr string) int32 {
 	i := ToInt64(valstr)
@@ -94,62 +108,6 @@ func (t *BpfProcessEventStr) ToTyped() *BpfProcessEvent {
 	return ret
 }
 
-//{"name":"proc_events","hostIdentifier":"ubuntu","calendarTime":"Mon May  8 22:15:00 2023 UTC","unixTime":1683584100,
-//  "epoch":0,"counter":57,"numerics":false,"decorations":{"host_uuid":"48754d56-277e-7cb6-dd7b-f58673f0c7fd","username":"develop"},
-// "columns":{"cid":"10198",
-//   "cmdline":"bash /tmp/artwork-T1560.002_3-458617291/goart-T1560.002-test.bash",
-//   "cwd":"/home/amscwx","duration":"130942",
-//   "exit_code":"0","gid":"0","ntime":"92306409329558",
-//   "parent":"20468","path":"/usr/bin/bash","pid":"20478",
-//   "probe_error":"0","syscall":"exec","tid":"20478","uid":"1002"},"action":"added"}
-
-/*
-  process_file_events (audit)
-----------
-operation	TEXT Operation type
-pid	BIGINT Process ID
-ppid	BIGINT Parent process ID
-time	BIGINT Time of execution in UNIX time
-executable	TEXT The executable path 
-partial	TEXT True if this is a partial event (i.e.: this process existed before we started osquery)
-cwd	TEXT The current working directory of the process
-path	TEXT The path associated with the event
-dest_path	TEXT The canonical path associated with the event
-uid	TEXT The uid of the process performing the action
-gid	TEXT The gid of the process performing the action
-auid	TEXT Audit user ID of the process using the file
-euid	TEXT Effective user ID of the process using the file
-egid	TEXT Effective group ID of the process using the file
-fsuid	TEXT Filesystem user ID of the process using the file
-fsgid	TEXT Filesystem group ID of the process using the file
-suid	TEXT Saved user ID of the process using the file
-sgid	TEXT Saved group ID of the process using the file
-uptime	BIGINT Time of execution in system uptime
-eid	TEXT Event ID
- */
-
-/*
-file_events (inotify - no process info)
-----------
-target_path	TEXT The path associated with the event
-category	TEXT The category of the file defined in the config
-action	TEXT Change action (UPDATE, REMOVE, etc)
-transaction_id	BIGINT ID used during bulk update
-inode	BIGINT Filesystem inode number
-uid	BIGINT Owning user ID
-gid	BIGINT Owning group ID
-mode	TEXT Permission bits
-size	BIGINT Size of file in bytes
-atime	BIGINT Last access time
-mtime	BIGINT Last modification time
-ctime	BIGINTLast status change time
-md5	TEXT The MD5 of the file after change
-sha1	TEXT The SHA1 of the file after change
-sha256	TEXT The SHA256 of the file after change
-hashed	INTEGER 1 if the file was hashed, 0 if not, -1 if hashing failed
-time	BIGINT Time of file event
-eid	TEXT Event ID
-*/
 //{"name":"file_events","hostIdentifier":"ubuntu","calendarTime":"Mon May  8 22:15:45 2023 UTC","unixTime":1683584145,"epoch":0,"counter":105,"numerics":false,
 //   "decorations":{"host_uuid":"48754d56-277e-7cb6-dd7b-f58673f0c7fd","username":"develop"},
 //   "columns":{"action":"CREATED","atime":"","category":"custom_category","ctime":"","gid":"","hashed":"0","inode":"","md5":"","mode":"","mtime":"","sha1":"","sha256":"","size":"",
@@ -202,11 +160,94 @@ func (t *INotifyFileEventStr) ToTyped() *INotifyFileEvent {
 	return ret
 }
 
+/*
+{"name":"bpf_socket_events","hostIdentifier":"ubuntu","calendarTime":"Mon May 15 21:11:37 2023 UTC","unixTime":1684185097,"epoch":0,"counter":7816,"numerics":false,
+  "decorations":{"host_uuid":"48754d56-277e-7cb6-dd7b-f58673f0c7fd","username":"amscwx"},"columns":{
+    "cid":"41430","duration":"56348","exit_code":"18446744073709551501","family":"2","fd":"106","gid":"1002","local_address":"","local_port":"0","ntime":"692196940063927",
+    "parent":"108659","path":"/usr/lib/firefox/firefox","pid":"108660","probe_error":"0","protocol":"0","remote_address":"208.80.153.224","remote_port":"443",
+    "syscall":"connect","tid":"108673","type":"1","uid":"1002"},"action":"added"}
+*/
+
+type BpfSocketEventColumnsStr struct {
+	Pid string           `json:"pid"`
+	Tid string           `json:"tid"`
+	Uid string           `json:"uid"`
+	Gid string           `json:"gid"`
+	RemoteAddr string    `json:"remote_address"`
+	RemotePort string    `json:"remote_port"`
+	LocalAddr string     `json:"local_address"`
+	LocalPort string     `json:"local_port"`
+	UptimeNanos string   `json:"ntime"`
+	Family string        `json:"family"` // AF_INET, etc
+	ParentPid string     `json:"parent"`
+	ExePath string       `json:"path"`
+	Protocol string      `json:"protocol"`
+	SysCall string       `json:"syscall"`
+}
+
+type BpfSocketEventColumns struct {
+	Pid int64           `json:"pid"`
+	Tid int64           `json:"tid"`
+	Uid int64           `json:"uid"`
+	Gid int64           `json:"gid"`
+	RemoteAddr string   `json:"remote_address"`
+	RemotePort int      `json:"remote_port"`
+	LocalAddr string    `json:"local_address"`
+	LocalPort int       `json:"local_port"`
+	UptimeNanos uint64  `json:"ntime"`
+	Family int          `json:"family"` // AF_INET, etc
+	ParentPid int64     `json:"parent"`
+	ExePath string      `json:"path"`
+	Protocol int        `json:"protocol"`
+	SysCall string      `json:"syscall"`
+}
+
+type BpfSocketEventStr struct {
+	Name string                 `json:"name"`
+	HostId string               `json:"hostIdentifier"`
+	UnixTime int64             `json:"unixTime"`
+	CalendarTime string         `json:"calendarTime"`
+	Action string               `json:"action"`
+	HasNumerics bool            `json:"numerics"`
+	Columns BpfSocketEventColumnsStr `json:"columns"`
+}
+
+type BpfSocketEvent struct {
+	Name string                 `json:"name"`
+	HostId string               `json:"hostIdentifier"`
+	UnixTime int64             `json:"unixTime"`
+	CalendarTime string         `json:"calendarTime"`
+	Action string               `json:"action"`
+	HasNumerics bool            `json:"numerics"`
+	Columns BpfSocketEventColumns `json:"columns"`
+}
+
+func (t *BpfSocketEventStr) ToTyped() *BpfSocketEvent {
+	ret := &BpfSocketEvent{t.Name, t.HostId, t.UnixTime, t.CalendarTime, t.Action, t.HasNumerics, BpfSocketEventColumns{}}
+	ret.Columns.ExePath = t.Columns.ExePath
+	ret.Columns.LocalAddr = t.Columns.LocalAddr
+	ret.Columns.RemoteAddr = t.Columns.RemoteAddr
+	ret.Columns.SysCall = t.Columns.SysCall
+
+	ret.Columns.Protocol = ToInt(t.Columns.Protocol)
+	ret.Columns.LocalPort = ToInt(t.Columns.LocalPort)
+	ret.Columns.RemotePort = ToInt(t.Columns.RemotePort)
+	ret.Columns.Uid = ToInt64(t.Columns.Uid)
+	ret.Columns.Gid = ToInt64(t.Columns.Gid)
+	ret.Columns.Pid = ToInt64(t.Columns.Pid)
+	ret.Columns.ParentPid = ToInt64(t.Columns.ParentPid)
+	ret.Columns.Tid = ToInt64(t.Columns.Tid)
+
+	ret.Columns.UptimeNanos = ToUInt64(t.Columns.UptimeNanos)
+	return ret
+}
+
 type EventWrapper struct {
-	TableName string
+	TableName        string
 	RawJsonStr       string
 	INotifyFileMsg   *INotifyFileEvent
 	BpfProcessMsg    *BpfProcessEvent
+	BpfSocketMsg     *BpfSocketEvent
 }
 
 // ================================== conversions to simple schema
@@ -226,6 +267,52 @@ func (t *BpfProcessEvent) ToSimple() *SimpleEvent {
 	fields.ParentPid = t.Columns.ParentPid
 
 	ret.ProcessFields = fields
+	return ret
+}
+
+const IpProtoTcp int = 6
+const IpProtoIcmp int = 1
+const IpProtoUdp int = 17
+
+func MakeFlowStr(protocol int, laddr string, lport int, raddr string, rport int, sysCall string) string {
+	proto := "?"
+	switch protocol {
+	case 0:
+		switch sysCall {
+		case "connect":
+			protocol = IpProtoTcp
+			proto = "tcp"
+		}
+	case IpProtoTcp:
+		proto = "tcp"
+	case IpProtoUdp:
+		proto = "udp"
+	case IpProtoIcmp:
+		proto = "icmp"
+	}
+	if len(laddr) == 0 {
+		laddr = "0.0.0.0"
+	}
+
+	s := proto + ":" + laddr + ":" + fmt.Sprintf("%d", lport)
+	s += "->" + raddr + ":" + fmt.Sprintf("%d", rport)
+
+	return s
+}
+
+func (t *BpfSocketEvent) ToSimple() *SimpleEvent {
+	ret := &SimpleEvent{}
+	ret.EventType = SimpleSchemaNetflow
+	ret.Timestamp = GetTsFromUptime(t.Columns.UptimeNanos)
+
+	fields := &SimpleNetflowFields{}
+
+	fields.FlowStr = MakeFlowStr(t.Columns.Protocol, t.Columns.LocalAddr, t.Columns.LocalPort, t.Columns.RemoteAddr, t.Columns.RemotePort, t.Columns.SysCall)
+
+	fields.ExePath = t.Columns.ExePath
+	fields.Pid = t.Columns.Pid
+
+	ret.NetflowFields = fields
 	return ret
 }
 
