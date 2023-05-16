@@ -1,0 +1,4 @@
+github.com/secureworks/atomic-harness v0.0.0-20230516003830-dabbf9da18c5 h1:Us7PnLrsOrVw/vCB+BcNYuatlPY48vLNBe79PbawG5c=
+github.com/secureworks/atomic-harness v0.0.0-20230516003830-dabbf9da18c5/go.mod h1:ujiaRkFfxtg+RiBCy8UIUVK7TwkjoP/z7Ka4orx09uc=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
