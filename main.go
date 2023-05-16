@@ -37,23 +37,18 @@ var (
 	gRxQueryName = regexp.MustCompile(`^."name":"([\w-_\d]+).*"numerics":([\w\d]+)`)
 )
 var flagTelemPath string
-var flagExtractAndValidate string
-var flagAtomicTempDir string
 var flagResultsPath string
+var flagFetch bool
 var flagVerbose bool
-var flagDurationSeconds uint
-var flagUnbatch bool
 var flagTimeRangeStr string
+var flagClean bool
 
 func init() {
-	flag.StringVar(&flagExtractAndValidate, "validate", "", "extract events for specific atomic test and validate using criteria in csv")
-	flag.StringVar(&flagAtomicTempDir, "atomictemp", "", "path of temp directory used by atomic runner for test. Used to locate shell process for begin/end")
+	flag.BoolVar(&flagFetch, "fetch", false, "gather all event telemetry in time range. output to telemetry.json and simple_telemetry.json")
 	flag.StringVar(&flagResultsPath, "resultsdir", "", "path to write results in validate mode")
 	flag.BoolVar(&gVerbose, "verbose", false, "if true, logs more debug info")
 	flag.StringVar(&flagTimeRangeStr, "ts", "", "start,end unix timestamps")
-
-	flag.UintVar(&flagDurationSeconds, "duration", 0, "time to wait for telemetry") // compat
-	flag.BoolVar(&flagUnbatch, "unbatch", false, "if true, breaks batched events into individuals") // compat
+	flag.BoolVar(&flagClean, "clearcache", false, "flag not applicable")
 }
 
 
@@ -205,6 +200,9 @@ func HandleEvent(evt *EventWrapper) {
 
 }
 
+/*
+ * for each line in osqueryd.results.log, parse and handle event
+ */
 func processFile(path string) {
     file, err := os.Open(path)
     if err != nil {
@@ -231,6 +229,13 @@ func processFile(path string) {
     }
 }
 
+/*
+ * This parses the --ts argument string.
+ * It has two unix timestamps separated by a comma.
+ * The timestamps could be in seconds or nanoseconds.
+ * example:
+ *      --ts 1684198704,1684198754
+ */
 func ParseTimeRangeArg(s string, tstart *int64, tend *int64) {
 	if 0 == len(s) {
 		return
@@ -239,8 +244,23 @@ func ParseTimeRangeArg(s string, tstart *int64, tend *int64) {
 	if len(a) != 2 {
 		return
 	}
-	*tstart = ToInt64(a[0]) - 1000000000
-	*tend = ToInt64(a[1]) + 1000000000
+
+	// if timestamp is in seconds, convert to nanos
+
+	if len(a[0]) < 16 {
+		a[0] = a[0] + "000000000"
+		a[1] = a[1] + "000000000"
+	}
+
+	// parse
+
+	*tstart = ToInt64(a[0])
+	*tend = ToInt64(a[1])
+
+	// widen range
+
+	*tstart -= 1000000000
+	*tend += 1000000000
 }
 
 /*
@@ -273,6 +293,16 @@ func main() {
 	}
 	flag.Parse()
 
+	if true == flagClean {
+		fmt.Println("clearcache - nothing to do")
+		return
+	}
+
+	if false == flagFetch {
+		fmt.Println("ERROR: only --fetch mode supported")
+		os.Exit(int(types.StatusTelemetryToolFailure))
+	}
+
 	files := flag.Args()
 
 	if flagTelemPath == "" {
@@ -283,36 +313,45 @@ func main() {
 			flagTelemPath = LinuxResultsPath
 		default:
 			fmt.Println("no default telempath for ", runtime.GOOS)
-			os.Exit(1)
+			os.Exit(int(types.StatusTelemetryToolFailure))
 		}
 	}
 
 	ParseTimeRangeArg(flagTimeRangeStr, &gTimeRangeStart, &gTimeRangeEnd)
+	if 0 == gTimeRangeStart || 0 == gTimeRangeEnd {
+		fmt.Println("ERROR: time range invalid or not specified", flagTimeRangeStr)
+		os.Exit(int(types.StatusTelemetryToolFailure))
+	}
 
-	if flagExtractAndValidate != "" {
+	if flagFetch {
 		var err error
 
 		outpath := flagResultsPath + "/telemetry.json"
 		gTelemetryOutputFile,err = os.OpenFile(outpath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			fmt.Println("ERROR: unable to create outfile",outpath, err)
-			os.Exit(2)
+			os.Exit(int(types.StatusTelemetryToolFailure))
 		}
 
 		outpath = flagResultsPath + "/simple_telemetry.json"
 		gSimpleTelemetryOutputFile,err = os.OpenFile(outpath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			fmt.Println("ERROR: unable to create outfile",outpath, err)
-			os.Exit(2)
+			os.Exit(int(types.StatusTelemetryToolFailure))
 		}
 	}
 	defer gTelemetryOutputFile.Close()
 	defer gSimpleTelemetryOutputFile.Close()
 
-	if flagDurationSeconds > 0 {
-		time.Sleep(time.Duration(flagDurationSeconds) * time.Second)
-	}
+	// we need to wait for events, assuming that the schedule is
+	// outputting events on a minute schedule
 
+	now := time.Now().Unix()
+	deltaSec := now - (gTimeRangeEnd / 1000000000)
+	if deltaSec < 65 {
+		fmt.Println("Waiting for osquery schedule to gather events into results")
+		time.Sleep(time.Duration(65) * time.Second)
+	}
 
 	// read in osqueryd.results file
 
@@ -340,9 +379,5 @@ func main() {
 		}
 	}
 
-	// output
-
-	if flagExtractAndValidate != "" {
-		os.Exit(int(types.StatusDelegateValidation))
-	}
+	os.Exit(int(types.StatusDelegateValidation))
 }

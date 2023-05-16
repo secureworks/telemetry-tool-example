@@ -2,6 +2,13 @@
 
 Example of tool needed to fetch telemetry for the [atomic-harness](https://github.com/secureworks/atomic-harness) project.  This example demonstrates using [osquery](https://github.com/osquery/osquery) telemetry.
 
+## Overview
+This tool will read in the /var/log/osquery/osqueryd.results.log, extract the supported events results.  It generates `telemetry.json` and `simple_telemetry.json` files, where the 'simple' is a conversion of each event into a schema that the atomic-harness understands.  The two files should have exactly the same number of lines, and line N in one file should match the event on same line in the other file.  The harness will extract the events for each atomic test run and do the matching against the criteria.
+
+```sh
+telemtool --fetch --resultsdir /tmp/somedir --ts 1684198704,1684198754
+```
+
 ## osquery Linux Event Table Support
 
 NOTE: The tool expects the schedule query to pull events to be named the same as the table.
