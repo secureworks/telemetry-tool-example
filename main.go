@@ -343,6 +343,6 @@ func main() {
 	// output
 
 	if flagExtractAndValidate != "" {
-		os.Exit(int(StatusDelegateValidation))
+		os.Exit(int(types.StatusDelegateValidation))
 	}
 }
