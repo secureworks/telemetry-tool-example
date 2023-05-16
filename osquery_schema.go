@@ -9,6 +9,8 @@ package main
 import (
 	"fmt"
 	"strconv"
+
+	types "github.com/secureworks/atomic-harness/pkg/types"
 )
 
 //{"name":"bpf_process_events","hostIdentifier":"ubuntu","calendarTime":"Mon May  8 22:15:00 2023 UTC","unixTime":1683584100,
@@ -255,12 +257,12 @@ type EventWrapper struct {
 /*
  * return a simplified event instance
  */
-func (t *BpfProcessEvent) ToSimple() *SimpleEvent {
-	ret := &SimpleEvent{}
-	ret.EventType = SimpleSchemaProcess
+func (t *BpfProcessEvent) ToSimple() *types.SimpleEvent {
+	ret := &types.SimpleEvent{}
+	ret.EventType = types.SimpleSchemaProcess
 	ret.Timestamp = GetTsFromUptime(t.Columns.UptimeNanos)
 
-	fields := &SimpleProcessFields{}
+	fields := &types.SimpleProcessFields{}
 	fields.Cmdline = t.Columns.Cmdline
 	fields.ExePath = t.Columns.Path
 	fields.Pid = t.Columns.Pid
@@ -300,48 +302,48 @@ func MakeFlowStr(protocol int, laddr string, lport int, raddr string, rport int,
 	return s
 }
 
-func (t *BpfSocketEvent) ToSimple() *SimpleEvent {
-	ret := &SimpleEvent{}
-	ret.EventType = SimpleSchemaNetflow
+func (t *BpfSocketEvent) ToSimple() *types.SimpleEvent {
+	ret := &types.SimpleEvent{}
+	ret.EventType = types.SimpleSchemaNetflow
 	ret.Timestamp = GetTsFromUptime(t.Columns.UptimeNanos)
 
-	fields := &SimpleNetflowFields{}
+	fields := &types.SimpleNetflowFields{}
 
 	fields.FlowStr = MakeFlowStr(t.Columns.Protocol, t.Columns.LocalAddr, t.Columns.LocalPort, t.Columns.RemoteAddr, t.Columns.RemotePort, t.Columns.SysCall)
 
-	fields.ExePath = t.Columns.ExePath
-	fields.Pid = t.Columns.Pid
+	//fields.ExePath = t.Columns.ExePath
+	//fields.Pid = t.Columns.Pid
 
 	ret.NetflowFields = fields
 	return ret
 }
 
-func (t *INotifyFileEvent) ToSimple() *SimpleEvent {
-	ret := &SimpleEvent{}
-	ret.EventType = SimpleSchemaFilemod            // Todo: read-only as well?
+func (t *INotifyFileEvent) ToSimple() *types.SimpleEvent {
+	ret := &types.SimpleEvent{}
+	ret.EventType = types.SimpleSchemaFilemod            // Todo: read-only as well?
 	ret.Timestamp = t.Columns.UnixTime*1000000000
 
-	fields := &SimpleFileFields{}
+	fields := &types.SimpleFileFields{}
 	fields.TargetPath = t.Columns.TargetPath
 	//fields.Uid = t.Columns.Uid
 
 	switch t.Columns.Action {
 	case "CREATED" :
-		fields.Action = SimpleFileActionCreate
+		fields.Action = types.SimpleFileActionCreate
 	case "UPDATED" :
-		fields.Action = SimpleFileActionOpenWrite
+		fields.Action = types.SimpleFileActionOpenWrite
 	case "OPENED" :
-		ret.EventType = SimpleSchemaFileRead
-		fields.Action = SimpleFileActionOpenRead
+		ret.EventType = types.SimpleSchemaFileRead
+		fields.Action = types.SimpleFileActionOpenRead
 	case "ACCESSED" :
-		ret.EventType = SimpleSchemaFileRead
-		fields.Action = SimpleFileActionOpenRead
+		ret.EventType = types.SimpleSchemaFileRead
+		fields.Action = types.SimpleFileActionOpenRead
 	case "DELETED" :
-		fields.Action = SimpleFileActionDelete
+		fields.Action = types.SimpleFileActionDelete
 	case "ATTRIBUTES_MODIFIED":
-		fields.Action = SimpleFileActionChmod
+		fields.Action = types.SimpleFileActionChmod
 	default:
-		fields.Action = SimpleFileActionUnknown
+		fields.Action = types.SimpleFileActionUnknown
 	}
 
 	ret.FileFields = fields

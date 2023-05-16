@@ -13,6 +13,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	types "github.com/secureworks/atomic-harness/pkg/types"
 )
 
 const (
@@ -147,7 +149,7 @@ func ParseEvent(rawJsonString string) (*EventWrapper, error) {
  * IncludeEvent will write the event telemetry.json file.
  * If in delegation mode, will write to the simple_telemetry.json file.
  */
-func IncludeEvent(rawJsonString string, simpleEvt *SimpleEvent) {
+func IncludeEvent(rawJsonString string, simpleEvt *types.SimpleEvent) {
 	gTotalMessages += 1
 	fmt.Fprintln(gTelemetryOutputFile, rawJsonString)
 
