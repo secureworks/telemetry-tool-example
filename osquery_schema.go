@@ -22,6 +22,21 @@ import (
 //   "parent":"20468","path":"/usr/bin/bash","pid":"20478",
 //   "probe_error":"0","syscall":"exec","tid":"20478","uid":"1002"},"action":"added"}
 
+/*
+{"name":"es_process_events","hostIdentifier":"Brendans-Air","calendarTime":"Fri May 19 18:48:29 2023 UTC","unixTime":1684522109
+,"epoch":0,"counter":124,"numerics":false,"decorations":{"host_uuid":"A98A1A3B-B666-5233-8433-5D48A12FEF0E"},
+"columns":{"cdhash":"417240c5b4d100a9c727ee7d1e21b8298dc273d8","child_pid":"",
+"cmdline":"/System/Library/CoreServices/Diagnostics Reporter.app/Contents/MacOS/Diagnostics Reporter ","cmdline_count":"1"
+,"codesigning_flags":"","cwd":"/","egid":"20",
+"env":"XPC_SERVICE_NAME=com.apple.DiagnosticsReporter SSH_AUTH_SOCK=/private/tmp/com.apple.launchd.4wHTDv1WIP/Listeners
+PATH=/usr/bin:/bin:/usr/sbin:/sbin XPC_FLAGS=1 LOGNAME=bmalone USER=bmalone HOME=/Users/bmalone SHELL=/bin/zsh
+TMPDIR=/var/folders/xc/b4t5gkz97fsfgkl0j3m499v40000gn/T/ "
+,"env_count":"9","euid":"20","event_type":"exec","exit_code":"","gid":"20","global_seq_num":"4535","original_parent":"1",
+"parent":"1","path":"/System/Library/CoreServices/Diagnostics Reporter.app/Contents/MacOS/Diagnostics Reporter","pid":"8369"
+,"platform_binary":"1","seq_num":"2184","signing_id":"com.apple.DiagnosticsReporter","team_id":"","time":"1684522109"
+,"uid":"501","username":"bmalone","version":"5"},"action":"added"}
+*/
+
 type BpfProcessEventColumns struct {
 	Cmdline string       `json:"cmdline"`
 	ExitCode int32       `json:"exit_code"`
@@ -37,6 +52,19 @@ type BpfProcessEventColumns struct {
 	Cwd string           `json:"cwd"`
 }
 
+type EsProcessEventColumns struct {
+	Cmdline string       `json:"cmdline"`
+	ExitCode int32       `json:"exit_code"`
+	ParentPid int64      `json:"parent"`
+	Path string
+	Env string 					 `json:"env"`
+	Pid int64            `json:"pid"`
+	Uid int64            `json:"uid"`
+	Gid int64            `json:"gid"`
+	Cwd string           `json:"cwd"`
+	time string 				 `json:"time"`
+}
+
 type BpfProcessEventColumnsStr struct {
 	Cmdline string       `json:"cmdline"`
 	ExitCode string       `json:"exit_code"`
@@ -50,6 +78,19 @@ type BpfProcessEventColumnsStr struct {
 	CGroupId string       `json:"cid"`
 	UptimeNanos string   `json:"ntime"`
 	Cwd string           `json:"cwd"`
+}
+
+type EsProcessEventColumnsStr struct {
+	Cmdline string       `json:"cmdline"`
+	ExitCode string       `json:"exit_code"`
+	ParentPid string      `json:"parent"`
+	Path string
+	Env string 					 `json:"env"`
+	Pid string            `json:"pid"`
+	Uid string            `json:"uid"`
+	Gid string            `json:"gid"`
+	Cwd string           `json:"cwd"`
+	time string 				 `json:"time"`
 }
 
 type BpfProcessEvent struct {
@@ -69,6 +110,25 @@ type BpfProcessEventStr struct {
 	Action string               `json:"action"`
 	HasNumerics bool            `json:"numerics"`
 	Columns BpfProcessEventColumnsStr `json:"columns"`
+}
+
+type EsProcessEvent struct {
+	Name string                 `json:"name"`
+	HostId string               `json:"hostIdentifier"`
+	UnixTime int64             `json:"unixTime"`
+	CalendarTime string         `json:"calendarTime"`
+	Action string               `json:"action"`
+	HasNumerics bool            `json:"numerics"`
+	Columns EsProcessEventColumns `json:"columns"`
+}
+type EsProcessEventStr struct {
+	Name string                 `json:"name"`
+	HostId string               `json:"hostIdentifier"`
+	UnixTime int64             `json:"unixTime"`
+	CalendarTime string         `json:"calendarTime"`
+	Action string               `json:"action"`
+	HasNumerics bool            `json:"numerics"`
+	Columns EsProcessEventColumnsStr `json:"columns"`
 }
 
 func ToInt64(valstr string) int64 {
@@ -110,11 +170,79 @@ func (t *BpfProcessEventStr) ToTyped() *BpfProcessEvent {
 	return ret
 }
 
+func (t *EsProcessEventStr) ToTyped() *EsProcessEvent {
+	ret := &EsProcessEvent{t.Name, t.HostId, t.UnixTime, t.CalendarTime, t.Action, t.HasNumerics, EsProcessEventColumns{}}
+	ret.Columns.Cmdline = t.Columns.Cmdline
+	ret.Columns.Path = t.Columns.Path
+	ret.Columns.Cwd = t.Columns.Cwd
+	ret.Columns.Env = t.Columns.Env
+	ret.Columns.ExitCode = ToInt32(t.Columns.ExitCode)
+	ret.Columns.ParentPid = ToInt64(t.Columns.ParentPid)
+	ret.Columns.Pid = ToInt64(t.Columns.Pid)
+	ret.Columns.Uid = ToInt64(t.Columns.Uid)
+	ret.Columns.Gid = ToInt64(t.Columns.Gid)
+	ret.Columns.gid = ToInt64(t.Columns.gid)
+	ret.Columns.time = ToUInt64(t.Columns.time)
+	return ret
+}
+
 //{"name":"file_events","hostIdentifier":"ubuntu","calendarTime":"Mon May  8 22:15:45 2023 UTC","unixTime":1683584145,"epoch":0,"counter":105,"numerics":false,
 //   "decorations":{"host_uuid":"48754d56-277e-7cb6-dd7b-f58673f0c7fd","username":"develop"},
 //   "columns":{"action":"CREATED","atime":"","category":"custom_category","ctime":"","gid":"","hashed":"0","inode":"","md5":"","mode":"","mtime":"","sha1":"","sha256":"","size":"",
 //       "target_path":"/tmp/passwd.zip","time":"1683584089","transaction_id":"0","uid":""},
 // "action":"added"}
+
+/*
+{"name":"es_process_file_events","hostIdentifier":"Brendans-Air","calendarTime":"Fri May 19 18:46:41 2023 UTC",
+"unixTime":1684522001,"epoch":0,"counter":116,"numerics":false,
+"decorations":{"host_uuid":"A98A1A3B-B666-5233-8433-5D48A12FEF0E"},
+"columns":{"dest_filename":"","event_type":"write",
+"filename":"/private/var/root/Library/Logs/Bluetooth/bluetoothd-hci-latest.pklg",
+"global_seq_num":"87594","parent":"1","path":"/usr/sbin/bluetoothd","pid":"148",
+"seq_num":"77337","time":"1684521997","version":"5"},"action":"added"}
+*/
+
+type EsFileEventColumns struct {
+	Path string    			 `json:"path"`
+	EventType string 		 `json:"event_type"`
+	Pid int64            `json:"pid"`
+	Parent int64         `json:"parent"`
+	Action string        `json:"action"`
+	UnixTime int64       `json:"time"`
+	Filename string 		 `json:"filename"`
+	DestFilename string  `json:"dest_filename"`
+}
+
+type EsFileEvent struct {
+	Name string                 `json:"name"`
+	HostId string               `json:"hostIdentifier"`
+	UnixTime int64             `json:"unixTime"`
+	CalendarTime string         `json:"calendarTime"`
+	Action string               `json:"action"`
+	HasNumerics bool            `json:"numerics"`
+	Columns EsFileEventColumns `json:"columns"`
+}
+
+type EsFileEventColumnsStr struct {
+	Path string    			 `json:"path"`
+	EventType string 		 `json:"event_type"`
+	Pid string            `json:"pid"`
+	Parent string         `json:"parent"`
+	Action string        `json:"action"`
+	UnixTime string       `json:"time"`
+	Filename string 		 `json:"filename"`
+	DestFilename string  `json:"dest_filename"`
+}
+
+type EsFileEventStr struct {
+	Name string                 `json:"name"`
+	HostId string               `json:"hostIdentifier"`
+	UnixTime int64             `json:"unixTime"`
+	CalendarTime string         `json:"calendarTime"`
+	Action string               `json:"action"`
+	HasNumerics bool            `json:"numerics"`
+	Columns EsFileEventColumnsStr `json:"columns"`
+}
 
 type INotifyEventColumns struct {
 	TargetPath string    `json:"target_path"`
