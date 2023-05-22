@@ -19,7 +19,7 @@ import (
 
 const (
 	LinuxResultsPath = "/var/log/osquery/osqueryd.results.log"
-	MacOSResultsPath = "/var/log/osquery/"
+	MacOSResultsPath = "/var/log/osquery/osqueryd.results.log"
 )
 
 var (
@@ -130,6 +130,35 @@ func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 			}
 			retval.BpfSocketMsg = msg.ToTyped()
 		}
+	case "es_process_events":
+		if hasNumerics {
+			msg := &EsProcessEvent{}
+			if err = json.Unmarshal([]byte(rawJsonString), msg); err != nil {
+				return nil, err
+			}
+			retval.EsProcessEventMsg = msg
+
+		} else {
+			msg := &EsProcessEventStr{}
+			if err = json.Unmarshal([]byte(rawJsonString), msg); err != nil {
+				return nil, err
+			}
+			retval.EsProcessEventMsg = msg.ToTyped()
+		}
+	case "es_process_file_events":
+		if hasNumerics {
+			msg := &EsFileEvent{}
+			if err = json.Unmarshal([]byte(rawJsonString), msg); err != nil {
+				return nil, err
+			}
+			retval.EsFileEventMsg = msg
+		} else {
+			msg := &EsFileEventStr{}
+			if err = json.Unmarshal([]byte(rawJsonString), msg); err != nil {
+				return nil, err
+			}
+			retval.EsFileEventMsg = msg.ToTyped()
+		}
 	default:
 		if gVerbose {
 			fmt.Println("Unsupported event table:", retval.TableName)
@@ -194,7 +223,15 @@ func HandleEvent(evt *EventWrapper) {
 		if InSpecifiedTimeRangeSec(evt.INotifyFileMsg.Columns.UnixTime) {
 			IncludeEvent(evt.RawJsonStr, evt.INotifyFileMsg.ToSimple())
 		}
-
+	case "es_process_file_events":
+		if InSpecifiedTimeRangeSec(evt.EsFileEventMsg.Columns.UnixTime) {
+			IncludeEvent(evt.RawJsonStr, evt.EsFileEventMsg.ToSimple())
+		}
+	case "es_process_events":
+		evtTs := GetTsFromUptime(evt.EsProcessEventMsg.Columns.Time)
+		if InSpecifiedTimeRangeNs(evtTs) {
+			IncludeEvent(evt.RawJsonStr, evt.EsProcessEventMsg.ToSimple())
+		}
 	default:
 	}
 
@@ -216,7 +253,7 @@ func processFile(path string) {
 
 		evt,err := ParseEvent(line)
 		if err != nil {
-			fmt.Println(err)		
+			fmt.Println(err)
 		}
 		if evt == nil {
 			continue

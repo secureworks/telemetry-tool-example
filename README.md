@@ -73,3 +73,50 @@ NOTE: The tool expects the schedule query to pull events to be named the same as
   }
 }
 ```
+
+##Mac Config. Put it here `/var/osquery/osquery.conf`
+```
+{
+  "options": {
+
+    "logger_path": "/var/log/osquery",
+    "disable_events":false,
+    "events_expiry":1,
+    "events_max":50000,
+    "disable_endpointsecurity": false,
+    "disable_endpointsecurity_fim": false,
+    "schedule_splay_percent": "10"
+  },
+
+  "schedule": {
+    "es_process_events":{
+       "query":"SELECT * FROM es_process_events",
+       "interval":60
+    },
+    "es_process_file_events":{
+       "query":"SELECT * FROM es_process_file_events",
+       "interval":60
+    }
+  },
+
+  "file_paths": {
+    "custom_category": [
+      "/etc/**",
+      "/tmp/*"
+    ],
+    "device_nodes": [
+      "/dev/*"
+    ]
+  },
+  "file_accesses": [
+    "custom_category"
+  ],
+
+  "decorators": {
+    "load": [
+      "SELECT uuid AS host_uuid FROM system_info;"
+    ]
+  }
+}
+
+```
