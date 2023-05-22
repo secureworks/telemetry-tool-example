@@ -23,18 +23,17 @@ import (
 //   "probe_error":"0","syscall":"exec","tid":"20478","uid":"1002"},"action":"added"}
 
 /*
-{"name":"es_process_events","hostIdentifier":"Brendans-Air","calendarTime":"Fri May 19 18:48:29 2023 UTC","unixTime":1684522109
-,"epoch":0,"counter":124,"numerics":false,"decorations":{"host_uuid":"A98A1A3B-B666-5233-8433-5D48A12FEF0E"},
+{"name":"es_process_events","hostIdentifier":"-","calendarTime":"Fri May 19 18:48:29 2023 UTC","unixTime":1684522109
+,"epoch":0,"counter":124,"numerics":false,"decorations":{"host_uuid":"-"},
 "columns":{"cdhash":"417240c5b4d100a9c727ee7d1e21b8298dc273d8","child_pid":"",
 "cmdline":"/System/Library/CoreServices/Diagnostics Reporter.app/Contents/MacOS/Diagnostics Reporter ","cmdline_count":"1"
 ,"codesigning_flags":"","cwd":"/","egid":"20",
 "env":"XPC_SERVICE_NAME=com.apple.DiagnosticsReporter SSH_AUTH_SOCK=/private/tmp/com.apple.launchd.4wHTDv1WIP/Listeners
-PATH=/usr/bin:/bin:/usr/sbin:/sbin XPC_FLAGS=1 LOGNAME=bmalone USER=bmalone HOME=/Users/bmalone SHELL=/bin/zsh
-TMPDIR=/var/folders/xc/b4t5gkz97fsfgkl0j3m499v40000gn/T/ "
+PATH=-"
 ,"env_count":"9","euid":"20","event_type":"exec","exit_code":"","gid":"20","global_seq_num":"4535","original_parent":"1",
 "parent":"1","path":"/System/Library/CoreServices/Diagnostics Reporter.app/Contents/MacOS/Diagnostics Reporter","pid":"8369"
 ,"platform_binary":"1","seq_num":"2184","signing_id":"com.apple.DiagnosticsReporter","team_id":"","time":"1684522109"
-,"uid":"501","username":"bmalone","version":"5"},"action":"added"}
+,"uid":"501","username":"-","version":"5"},"action":"added"}
 */
 
 type BpfProcessEventColumns struct {
@@ -193,7 +192,7 @@ func (t *EsProcessEventStr) ToTyped() *EsProcessEvent {
 // "action":"added"}
 
 /*
-{"name":"es_process_file_events","hostIdentifier":"Brendans-Air","calendarTime":"Fri May 19 18:46:41 2023 UTC",
+{"name":"es_process_file_events","hostIdentifier":"-","calendarTime":"Fri May 19 18:46:41 2023 UTC",
 "unixTime":1684522001,"epoch":0,"counter":116,"numerics":false,
 "decorations":{"host_uuid":"A98A1A3B-B666-5233-8433-5D48A12FEF0E"},
 "columns":{"dest_filename":"","event_type":"write",
