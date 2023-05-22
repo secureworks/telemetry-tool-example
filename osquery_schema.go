@@ -62,7 +62,7 @@ type EsProcessEventColumns struct {
 	Uid int64            `json:"uid"`
 	Gid int64            `json:"gid"`
 	Cwd string           `json:"cwd"`
-	time string 				 `json:"time"`
+	Time uint64 				 `json:"time"`
 }
 
 type BpfProcessEventColumnsStr struct {
@@ -90,7 +90,7 @@ type EsProcessEventColumnsStr struct {
 	Uid string            `json:"uid"`
 	Gid string            `json:"gid"`
 	Cwd string           `json:"cwd"`
-	time string 				 `json:"time"`
+	Time string 				 `json:"time"`
 }
 
 type BpfProcessEvent struct {
@@ -181,8 +181,8 @@ func (t *EsProcessEventStr) ToTyped() *EsProcessEvent {
 	ret.Columns.Pid = ToInt64(t.Columns.Pid)
 	ret.Columns.Uid = ToInt64(t.Columns.Uid)
 	ret.Columns.Gid = ToInt64(t.Columns.Gid)
-	ret.Columns.gid = ToInt64(t.Columns.gid)
-	ret.Columns.time = ToUInt64(t.Columns.time)
+	ret.Columns.Gid = ToInt64(t.Columns.Gid)
+	ret.Columns.Time = ToUInt64(t.Columns.Time)
 	return ret
 }
 
@@ -290,6 +290,20 @@ func (t *INotifyFileEventStr) ToTyped() *INotifyFileEvent {
 	return ret
 }
 
+func (t *EsFileEventStr) ToTyped() *EsFileEvent {
+	ret := &EsFileEvent{t.Name, t.HostId, t.UnixTime, t.CalendarTime, t.Action, t.HasNumerics, EsFileEventColumns{}}
+	ret.Columns.Filename = t.Columns.Filename
+	ret.Columns.DestFilename = t.Columns.DestFilename
+	ret.Columns.Action = t.Columns.Action
+	ret.Columns.Path = t.Columns.Path
+	ret.Columns.EventType = t.Columns.EventType
+	ret.Columns.Pid = ToInt64(t.Columns.Pid)
+	ret.Columns.Parent = ToInt64(t.Columns.Parent)
+	ret.Columns.UnixTime = ToInt64(t.Columns.UnixTime)
+	return ret
+}
+
+
 /*
 {"name":"bpf_socket_events","hostIdentifier":"ubuntu","calendarTime":"Mon May 15 21:11:37 2023 UTC","unixTime":1684185097,"epoch":0,"counter":7816,"numerics":false,
   "decorations":{"host_uuid":"48754d56-277e-7cb6-dd7b-f58673f0c7fd","username":"amscwx"},"columns":{
@@ -378,9 +392,55 @@ type EventWrapper struct {
 	INotifyFileMsg   *INotifyFileEvent
 	BpfProcessMsg    *BpfProcessEvent
 	BpfSocketMsg     *BpfSocketEvent
+	EsProcessEventMsg   *EsProcessEvent
+	EsFileEventMsg			 *EsFileEvent
 }
 
 // ================================== conversions to simple schema
+
+func (t *EsProcessEvent) ToSimple() *types.SimpleEvent {
+	ret := &types.SimpleEvent{}
+	ret.EventType = types.SimpleSchemaProcess
+	ret.Timestamp = GetTsFromUptime(t.Columns.Time)
+
+	fields := &types.SimpleProcessFields{}
+	fields.Cmdline = t.Columns.Cmdline
+	fields.ExePath = t.Columns.Path
+	fields.Pid = t.Columns.Pid
+	fields.ParentPid = t.Columns.ParentPid
+
+	ret.ProcessFields = fields
+	return ret
+}
+
+func (t *EsFileEvent) ToSimple() *types.SimpleEvent {
+	ret := &types.SimpleEvent{}
+	ret.EventType = types.SimpleSchemaFilemod            // Todo: read-only as well?
+	ret.Timestamp = t.Columns.UnixTime*1000000000
+
+	fields := &types.SimpleFileFields{}
+	fields.TargetPath = t.Columns.Filename
+	//fields.Uid = t.Columns.Uid
+
+	switch t.Columns.EventType {
+	case "create" :
+		fields.Action = types.SimpleFileActionCreate
+	case "write" :
+		fields.Action = types.SimpleFileActionOpenWrite
+	case "open" :
+		ret.EventType = types.SimpleSchemaFileRead
+		fields.Action = types.SimpleFileActionOpenRead
+	case "unlink" :
+		fields.Action = types.SimpleFileActionDelete
+	case "setmode":
+		fields.Action = types.SimpleFileActionChmod
+	default:
+		fields.Action = types.SimpleFileActionUnknown
+	}
+
+	ret.FileFields = fields
+	return ret
+}
 
 /*
  * return a simplified event instance
