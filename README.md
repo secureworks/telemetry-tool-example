@@ -75,7 +75,7 @@ NOTE: The tool expects the schedule query to pull events to be named the same as
 ```
 
 ##Mac Config. Put it here `/var/osquery/osquery.conf`
-```
+```json
 {
   "options": {
 
@@ -106,6 +106,50 @@ NOTE: The tool expects the schedule query to pull events to be named the same as
     ],
     "device_nodes": [
       "/dev/*"
+    ]
+  },
+  "file_accesses": [
+    "custom_category"
+  ],
+
+  "decorators": {
+    "load": [
+      "SELECT uuid AS host_uuid FROM system_info;"
+    ]
+  }
+}
+
+```
+
+##Windows Config 
+```json
+{
+  "options": {
+
+    "logger_path": "C:\\Program Files\\osquery\\log\\",
+    "disable_events":false,
+    "events_expiry":1,
+    "events_max":50000,
+    "enable_ntfs_event_publisher": true,
+    "enable_powershell_events_subscriber": true,
+    "enable_windows_events_publisher": true,
+    "enable_windows_events_subscriber": true,
+    "windows_event_channels":"System,Application,Setup,Security",
+    "schedule_splay_percent": "10"
+  },
+
+  "schedule": {
+    "process_etw_events":{
+       "query":"SELECT * FROM process_etw_events",
+       "interval":60
+    }
+  },
+
+  "file_paths": {
+    "custom_category": [
+      "C:\\Users\\admin\\AppData\\Local\\Temp\\*"
+    ],
+    "device_nodes": [
     ]
   },
   "file_accesses": [

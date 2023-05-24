@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strings"
 	"time"
+	"path/filepath"
 
 	types "github.com/secureworks/atomic-harness/pkg/types"
 )
@@ -20,6 +21,7 @@ import (
 const (
 	LinuxResultsPath = "/var/log/osquery/osqueryd.results.log"
 	MacOSResultsPath = "/var/log/osquery/osqueryd.results.log"
+	WinResultsPath = "C:\\Program Files\\osquery\\log\\osqueryd.results.log"
 )
 
 var (
@@ -159,6 +161,12 @@ func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 			}
 			retval.EsFileEventMsg = msg.ToTyped()
 		}
+	case "windows_events":
+		msg := &WinEvent{}
+		if err = json.Unmarshal([]byte(rawJsonString), msg); err != nil {
+			return nil, err
+		}
+		retval.WinEventMsg = msg
 	default:
 		if gVerbose {
 			fmt.Println("Unsupported event table:", retval.TableName)
@@ -231,6 +239,12 @@ func HandleEvent(evt *EventWrapper) {
 		evtTs := GetTsFromUptime(evt.EsProcessEventMsg.Columns.Time)
 		if InSpecifiedTimeRangeNs(evtTs) {
 			IncludeEvent(evt.RawJsonStr, evt.EsProcessEventMsg.ToSimple())
+		}
+	case "windows_events":
+		if InSpecifiedTimeRangeSec(evt.WinEventMsg.UnixTime) {
+			if (evt.WinEventMsg.Columns.Eventid == "4688"){
+				IncludeEvent(evt.RawJsonStr, evt.WinEventMsg.ToSimple())
+			}
 		}
 	default:
 	}
@@ -348,6 +362,8 @@ func main() {
 			flagTelemPath = MacOSResultsPath
 		case "linux":
 			flagTelemPath = LinuxResultsPath
+		case "windows":
+			flagTelemPath = WinResultsPath
 		default:
 			fmt.Println("no default telempath for ", runtime.GOOS)
 			os.Exit(int(types.StatusTelemetryToolFailure))
@@ -363,14 +379,14 @@ func main() {
 	if flagFetch {
 		var err error
 
-		outpath := flagResultsPath + "/telemetry.json"
+		outpath := filepath.FromSlash(flagResultsPath + "/telemetry.json")
 		gTelemetryOutputFile,err = os.OpenFile(outpath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			fmt.Println("ERROR: unable to create outfile",outpath, err)
 			os.Exit(int(types.StatusTelemetryToolFailure))
 		}
 
-		outpath = flagResultsPath + "/simple_telemetry.json"
+		outpath = filepath.FromSlash(flagResultsPath + "/simple_telemetry.json")
 		gSimpleTelemetryOutputFile,err = os.OpenFile(outpath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			fmt.Println("ERROR: unable to create outfile",outpath, err)

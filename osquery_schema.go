@@ -9,6 +9,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"encoding/json"
 
 	types "github.com/secureworks/atomic-harness/pkg/types"
 )
@@ -35,6 +36,53 @@ PATH=-"
 ,"platform_binary":"1","seq_num":"2184","signing_id":"com.apple.DiagnosticsReporter","team_id":"","time":"1684522109"
 ,"uid":"501","username":"-","version":"5"},"action":"added"}
 */
+/*
+{"name":"windows_events","hostIdentifier":"DESKTOP-PVUQNBE","calendarTime":"Tue May 23 14:35:44 2023 UTC","unixTime":1684852544,"epoch":0,
+"counter":37,"numerics":false,"decorations":{"host_uuid":"-"},
+"columns":
+{"computer_name":"DESKTOP-PVUQNBE",
+"data":"{\"EventData\":{\"SubjectUserSid\":\"S-1-5-18\",\"SubjectUserName\":\"DESKTOP-PVUQNBE$\",
+\"SubjectDomainName\":\"WORKGROUP\",\"SubjectLogonId\":\"0x3e7\",\"NewProcessId\":\"0x61d8\",
+\"NewProcessName\":\"C:\\\\Windows\\\\System32\\\\notepad.exe\",\"TokenElevationType\":\"%%1937\",\"ProcessId\":\"0x28d8\",
+\"CommandLine\":\"\\\"C:\\\\WINDOWS\\\\system32\\\\notepad.exe\\\" \",\"TargetUserSid\":\"-\",
+\"TargetUserName\":\"TopAcc\",\"TargetDomainName\":\"DESKTOP-PVUQNBE\",\"TargetLogonId\":\"0x5a40a6\",
+\"ParentProcessName\":\"C:\\\\Windows\\\\explorer.exe\",\"MandatoryLabel\":\"S-1-16-12288\"}}",
+"datetime":"2023-05-23T14:34:44.5348633Z","eventid":"4688","keywords":"0x8020000000000000","level":"0",
+"provider_guid":"{-}","provider_name":"Microsoft-Windows-Security-Auditing","source":"Security",
+"task":"13312","time":"1684852490"},
+"action":"added"}
+*/
+
+type WinEventColumns struct {
+	Eventid string       `json:"eventid"`
+	Data string 			   `json:"data"`
+}
+
+type ProcessEventData struct {
+	ProcessEventData WinProcessData `json:"ProcessEventData"`
+}
+
+type WinProcessData struct {
+	NPid string 				 `json:"NewProcessId"`
+	Pid string 					 `json:"ProcessId"`		
+	ProcessName string   `json:"NewProcessName"`
+	CommandLine string  `json:"CommandLine"`
+	User string					 `json:"TargetUserName"`
+	Parent string   		 `json:"ParentProcessName"`
+}
+
+type WinEvent struct {
+	Name string                 `json:"name"`
+	HostId string               `json:"hostIdentifier"`
+	UnixTime int64             `json:"unixTime"`
+	CalendarTime string         `json:"calendarTime"`
+	Action string               `json:"action"`
+	HasNumerics bool            `json:"numerics"`
+	Columns WinEventColumns     `json:"columns"`
+	Data WinProcessData
+	EventD string
+}
+
 
 type BpfProcessEventColumns struct {
 	Cmdline string       `json:"cmdline"`
@@ -393,9 +441,27 @@ type EventWrapper struct {
 	BpfSocketMsg     *BpfSocketEvent
 	EsProcessEventMsg   *EsProcessEvent
 	EsFileEventMsg			 *EsFileEvent
+	WinEventMsg          *WinEvent
 }
 
 // ================================== conversions to simple schema
+func (t *WinEvent) ToSimple() *types.SimpleEvent {
+	ret := &types.SimpleEvent{}
+	ret.EventType = types.SimpleSchemaProcess
+	ret.Timestamp = t.UnixTime
+
+	fields := &types.SimpleProcessFields{}
+	data := &ProcessEventData{}
+	json.Unmarshal([]byte(t.Columns.Data), &data)
+	fields.Cmdline = data.ProcessEventData.CommandLine
+	fields.ExePath = data.ProcessEventData.ProcessName
+	fields.Pid, _ = strconv.ParseInt(string(data.ProcessEventData.NPid[2: len(data.ProcessEventData.NPid)]), 16, 64)
+	fields.ParentPid, _ = strconv.ParseInt(string(data.ProcessEventData.Pid[2: len(data.ProcessEventData.Pid)]),16, 64)
+
+	ret.ProcessFields = fields
+	return ret
+}
+
 
 func (t *EsProcessEvent) ToSimple() *types.SimpleEvent {
 	ret := &types.SimpleEvent{}
