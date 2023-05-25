@@ -44,6 +44,7 @@ var flagFetch bool
 var flagVerbose bool
 var flagTimeRangeStr string
 var flagClean bool
+var flagPrepareMode bool
 
 func init() {
 	flag.BoolVar(&flagFetch, "fetch", false, "gather all event telemetry in time range. output to telemetry.json and simple_telemetry.json")
@@ -51,6 +52,7 @@ func init() {
 	flag.BoolVar(&gVerbose, "verbose", false, "if true, logs more debug info")
 	flag.StringVar(&flagTimeRangeStr, "ts", "", "start,end unix timestamps")
 	flag.BoolVar(&flagClean, "clearcache", false, "flag not applicable")
+	flag.BoolVar(&flagPrepareMode, "prepare", false, "called by harness before a run of tests")
 }
 
 
@@ -344,8 +346,9 @@ func main() {
 	}
 	flag.Parse()
 
-	if true == flagClean {
-		fmt.Println("clearcache - nothing to do")
+	if true == flagPrepareMode {
+		// flagClean only relevant in prepare mode
+		fmt.Println("prepare - nothing to do")
 		return
 	}
 
