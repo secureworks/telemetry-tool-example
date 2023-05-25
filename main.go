@@ -168,7 +168,9 @@ func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 		if err = json.Unmarshal([]byte(rawJsonString), msg); err != nil {
 			return nil, err
 		}
+
 		retval.WinEventMsg = msg
+
 	default:
 		if gVerbose {
 			fmt.Println("Unsupported event table:", retval.TableName)
@@ -243,7 +245,10 @@ func HandleEvent(evt *EventWrapper) {
 			IncludeEvent(evt.RawJsonStr, evt.EsProcessEventMsg.ToSimple())
 		}
 	case "windows_events":
-		if InSpecifiedTimeRangeSec(evt.WinEventMsg.UnixTime) {
+
+		t, _ := time.Parse(time.RFC3339, evt.WinEventMsg.Columns.DateTime)
+
+		if InSpecifiedTimeRangeSec(t.Unix()) {
 			if (evt.WinEventMsg.Columns.Eventid == "4688"){
 				IncludeEvent(evt.RawJsonStr, evt.WinEventMsg.ToSimple())
 			}

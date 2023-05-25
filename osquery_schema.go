@@ -56,10 +56,11 @@ PATH=-"
 type WinEventColumns struct {
 	Eventid string       `json:"eventid"`
 	Data string 			   `json:"data"`
+	DateTime string 		 `json:"datetime"`
 }
 
 type ProcessEventData struct {
-	ProcessEventData WinProcessData `json:"ProcessEventData"`
+	ProcessEventData WinProcessData `json:"EventData"`
 }
 
 type WinProcessData struct {
@@ -455,9 +456,12 @@ func (t *WinEvent) ToSimple() *types.SimpleEvent {
 	json.Unmarshal([]byte(t.Columns.Data), &data)
 	fields.Cmdline = data.ProcessEventData.CommandLine
 	fields.ExePath = data.ProcessEventData.ProcessName
-	fields.Pid, _ = strconv.ParseInt(string(data.ProcessEventData.NPid[2: len(data.ProcessEventData.NPid)]), 16, 64)
-	fields.ParentPid, _ = strconv.ParseInt(string(data.ProcessEventData.Pid[2: len(data.ProcessEventData.Pid)]),16, 64)
-
+	if len(data.ProcessEventData.NPid) > 2 {
+		fields.Pid, _ = strconv.ParseInt(string(data.ProcessEventData.NPid[2: len(data.ProcessEventData.NPid)]), 16, 64)
+	}
+	if len(data.ProcessEventData.Pid) > 2 {
+		fields.ParentPid, _ = strconv.ParseInt(string(data.ProcessEventData.Pid[2: len(data.ProcessEventData.Pid)]),16, 64)
+	}
 	ret.ProcessFields = fields
 	return ret
 }
