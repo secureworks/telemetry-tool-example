@@ -7,9 +7,9 @@ package main
  */
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
-	"encoding/json"
 
 	types "github.com/secureworks/atomic-harness/pkg/types"
 )
@@ -54,9 +54,9 @@ PATH=-"
 */
 
 type WinEventColumns struct {
-	Eventid string       `json:"eventid"`
-	Data string 			   `json:"data"`
-	DateTime string 		 `json:"datetime"`
+	Eventid  string `json:"eventid"`
+	Data     string `json:"data"`
+	DateTime string `json:"datetime"`
 }
 
 type ProcessEventData struct {
@@ -64,119 +64,118 @@ type ProcessEventData struct {
 }
 
 type WinProcessData struct {
-	NPid string 				 `json:"NewProcessId"`
-	Pid string 					 `json:"ProcessId"`		
-	ProcessName string   `json:"NewProcessName"`
-	CommandLine string  `json:"CommandLine"`
-	User string					 `json:"TargetUserName"`
-	Parent string   		 `json:"ParentProcessName"`
+	NPid        string `json:"NewProcessId"`
+	Pid         string `json:"ProcessId"`
+	ProcessName string `json:"NewProcessName"`
+	CommandLine string `json:"CommandLine"`
+	User        string `json:"TargetUserName"`
+	Parent      string `json:"ParentProcessName"`
 }
 
 type WinEvent struct {
-	Name string                 `json:"name"`
-	HostId string               `json:"hostIdentifier"`
-	UnixTime int64             `json:"unixTime"`
-	CalendarTime string         `json:"calendarTime"`
-	Action string               `json:"action"`
-	HasNumerics bool            `json:"numerics"`
-	Columns WinEventColumns     `json:"columns"`
-	Data WinProcessData
-	EventD string
+	Name         string          `json:"name"`
+	HostId       string          `json:"hostIdentifier"`
+	UnixTime     int64           `json:"unixTime"`
+	CalendarTime string          `json:"calendarTime"`
+	Action       string          `json:"action"`
+	HasNumerics  bool            `json:"numerics"`
+	Columns      WinEventColumns `json:"columns"`
+	Data         WinProcessData
+	EventD       string
 }
 
-
 type BpfProcessEventColumns struct {
-	Cmdline string       `json:"cmdline"`
-	ExitCode int32       `json:"exit_code"`
-	ParentPid int64      `json:"parent"`
-	Path string
-	Pid int64            `json:"pid"`
-	SysCall string       `json:"syscall"`
-	Tid int64            `json:"tid"`
-	Uid int64            `json:"uid"`
-	Gid int64            `json:"gid"`
-	CGroupId int64       `json:"cid"`
-	UptimeNanos uint64   `json:"ntime"`
-	Cwd string           `json:"cwd"`
+	Cmdline     string `json:"cmdline"`
+	ExitCode    int32  `json:"exit_code"`
+	ParentPid   int64  `json:"parent"`
+	Path        string
+	Pid         int64  `json:"pid"`
+	SysCall     string `json:"syscall"`
+	Tid         int64  `json:"tid"`
+	Uid         int64  `json:"uid"`
+	Gid         int64  `json:"gid"`
+	CGroupId    int64  `json:"cid"`
+	UptimeNanos uint64 `json:"ntime"`
+	Cwd         string `json:"cwd"`
 }
 
 type EsProcessEventColumns struct {
-	Cmdline string       `json:"cmdline"`
-	ExitCode int32       `json:"exit_code"`
-	ParentPid int64      `json:"parent"`
-	Path string
-	Env string 					 `json:"env"`
-	Pid int64            `json:"pid"`
-	Uid int64            `json:"uid"`
-	Gid int64            `json:"gid"`
-	Cwd string           `json:"cwd"`
-	Time uint64 				 `json:"time"`
+	Cmdline   string `json:"cmdline"`
+	ExitCode  int32  `json:"exit_code"`
+	ParentPid int64  `json:"parent"`
+	Path      string
+	Env       string `json:"env"`
+	Pid       int64  `json:"pid"`
+	Uid       int64  `json:"uid"`
+	Gid       int64  `json:"gid"`
+	Cwd       string `json:"cwd"`
+	Time      uint64 `json:"time"`
 }
 
 type BpfProcessEventColumnsStr struct {
-	Cmdline string       `json:"cmdline"`
-	ExitCode string       `json:"exit_code"`
-	ParentPid string      `json:"parent"`
-	Path string
-	Pid string            `json:"pid"`
-	SysCall string       `json:"syscall"`
-	Tid string            `json:"tid"`
-	Uid string            `json:"uid"`
-	Gid string            `json:"gid"`
-	CGroupId string       `json:"cid"`
-	UptimeNanos string   `json:"ntime"`
-	Cwd string           `json:"cwd"`
+	Cmdline     string `json:"cmdline"`
+	ExitCode    string `json:"exit_code"`
+	ParentPid   string `json:"parent"`
+	Path        string
+	Pid         string `json:"pid"`
+	SysCall     string `json:"syscall"`
+	Tid         string `json:"tid"`
+	Uid         string `json:"uid"`
+	Gid         string `json:"gid"`
+	CGroupId    string `json:"cid"`
+	UptimeNanos string `json:"ntime"`
+	Cwd         string `json:"cwd"`
 }
 
 type EsProcessEventColumnsStr struct {
-	Cmdline string       `json:"cmdline"`
-	ExitCode string       `json:"exit_code"`
-	ParentPid string      `json:"parent"`
-	Path string
-	Env string 					 `json:"env"`
-	Pid string            `json:"pid"`
-	Uid string            `json:"uid"`
-	Gid string            `json:"gid"`
-	Cwd string           `json:"cwd"`
-	Time string 				 `json:"time"`
+	Cmdline   string `json:"cmdline"`
+	ExitCode  string `json:"exit_code"`
+	ParentPid string `json:"parent"`
+	Path      string
+	Env       string `json:"env"`
+	Pid       string `json:"pid"`
+	Uid       string `json:"uid"`
+	Gid       string `json:"gid"`
+	Cwd       string `json:"cwd"`
+	Time      string `json:"time"`
 }
 
 type BpfProcessEvent struct {
-	Name string                 `json:"name"`
-	HostId string               `json:"hostIdentifier"`
-	UnixTime int64             `json:"unixTime"`
-	CalendarTime string         `json:"calendarTime"`
-	Action string               `json:"action"`
-	HasNumerics bool            `json:"numerics"`
-	Columns BpfProcessEventColumns `json:"columns"`
+	Name         string                 `json:"name"`
+	HostId       string                 `json:"hostIdentifier"`
+	UnixTime     int64                  `json:"unixTime"`
+	CalendarTime string                 `json:"calendarTime"`
+	Action       string                 `json:"action"`
+	HasNumerics  bool                   `json:"numerics"`
+	Columns      BpfProcessEventColumns `json:"columns"`
 }
 type BpfProcessEventStr struct {
-	Name string                 `json:"name"`
-	HostId string               `json:"hostIdentifier"`
-	UnixTime int64             `json:"unixTime"`
-	CalendarTime string         `json:"calendarTime"`
-	Action string               `json:"action"`
-	HasNumerics bool            `json:"numerics"`
-	Columns BpfProcessEventColumnsStr `json:"columns"`
+	Name         string                    `json:"name"`
+	HostId       string                    `json:"hostIdentifier"`
+	UnixTime     int64                     `json:"unixTime"`
+	CalendarTime string                    `json:"calendarTime"`
+	Action       string                    `json:"action"`
+	HasNumerics  bool                      `json:"numerics"`
+	Columns      BpfProcessEventColumnsStr `json:"columns"`
 }
 
 type EsProcessEvent struct {
-	Name string                 `json:"name"`
-	HostId string               `json:"hostIdentifier"`
-	UnixTime int64             `json:"unixTime"`
-	CalendarTime string         `json:"calendarTime"`
-	Action string               `json:"action"`
-	HasNumerics bool            `json:"numerics"`
-	Columns EsProcessEventColumns `json:"columns"`
+	Name         string                `json:"name"`
+	HostId       string                `json:"hostIdentifier"`
+	UnixTime     int64                 `json:"unixTime"`
+	CalendarTime string                `json:"calendarTime"`
+	Action       string                `json:"action"`
+	HasNumerics  bool                  `json:"numerics"`
+	Columns      EsProcessEventColumns `json:"columns"`
 }
 type EsProcessEventStr struct {
-	Name string                 `json:"name"`
-	HostId string               `json:"hostIdentifier"`
-	UnixTime int64             `json:"unixTime"`
-	CalendarTime string         `json:"calendarTime"`
-	Action string               `json:"action"`
-	HasNumerics bool            `json:"numerics"`
-	Columns EsProcessEventColumnsStr `json:"columns"`
+	Name         string                   `json:"name"`
+	HostId       string                   `json:"hostIdentifier"`
+	UnixTime     int64                    `json:"unixTime"`
+	CalendarTime string                   `json:"calendarTime"`
+	Action       string                   `json:"action"`
+	HasNumerics  bool                     `json:"numerics"`
+	Columns      EsProcessEventColumnsStr `json:"columns"`
 }
 
 func ToInt64(valstr string) int64 {
@@ -251,81 +250,81 @@ func (t *EsProcessEventStr) ToTyped() *EsProcessEvent {
 */
 
 type EsFileEventColumns struct {
-	Path string    			 `json:"path"`
-	EventType string 		 `json:"event_type"`
-	Pid int64            `json:"pid"`
-	Parent int64         `json:"parent"`
-	Action string        `json:"action"`
-	UnixTime int64       `json:"time"`
-	Filename string 		 `json:"filename"`
-	DestFilename string  `json:"dest_filename"`
+	Path         string `json:"path"`
+	EventType    string `json:"event_type"`
+	Pid          int64  `json:"pid"`
+	Parent       int64  `json:"parent"`
+	Action       string `json:"action"`
+	UnixTime     int64  `json:"time"`
+	Filename     string `json:"filename"`
+	DestFilename string `json:"dest_filename"`
 }
 
 type EsFileEvent struct {
-	Name string                 `json:"name"`
-	HostId string               `json:"hostIdentifier"`
-	UnixTime int64             `json:"unixTime"`
-	CalendarTime string         `json:"calendarTime"`
-	Action string               `json:"action"`
-	HasNumerics bool            `json:"numerics"`
-	Columns EsFileEventColumns `json:"columns"`
+	Name         string             `json:"name"`
+	HostId       string             `json:"hostIdentifier"`
+	UnixTime     int64              `json:"unixTime"`
+	CalendarTime string             `json:"calendarTime"`
+	Action       string             `json:"action"`
+	HasNumerics  bool               `json:"numerics"`
+	Columns      EsFileEventColumns `json:"columns"`
 }
 
 type EsFileEventColumnsStr struct {
-	Path string    			 `json:"path"`
-	EventType string 		 `json:"event_type"`
-	Pid string            `json:"pid"`
-	Parent string         `json:"parent"`
-	Action string        `json:"action"`
-	UnixTime string       `json:"time"`
-	Filename string 		 `json:"filename"`
-	DestFilename string  `json:"dest_filename"`
+	Path         string `json:"path"`
+	EventType    string `json:"event_type"`
+	Pid          string `json:"pid"`
+	Parent       string `json:"parent"`
+	Action       string `json:"action"`
+	UnixTime     string `json:"time"`
+	Filename     string `json:"filename"`
+	DestFilename string `json:"dest_filename"`
 }
 
 type EsFileEventStr struct {
-	Name string                 `json:"name"`
-	HostId string               `json:"hostIdentifier"`
-	UnixTime int64             `json:"unixTime"`
-	CalendarTime string         `json:"calendarTime"`
-	Action string               `json:"action"`
-	HasNumerics bool            `json:"numerics"`
-	Columns EsFileEventColumnsStr `json:"columns"`
+	Name         string                `json:"name"`
+	HostId       string                `json:"hostIdentifier"`
+	UnixTime     int64                 `json:"unixTime"`
+	CalendarTime string                `json:"calendarTime"`
+	Action       string                `json:"action"`
+	HasNumerics  bool                  `json:"numerics"`
+	Columns      EsFileEventColumnsStr `json:"columns"`
 }
 
 type INotifyEventColumns struct {
-	TargetPath string    `json:"target_path"`
-	Uid int64            `json:"uid"`
-	Gid int64            `json:"gid"`
-	Action string        `json:"action"`
-	UnixTime int64       `json:"time"`
+	TargetPath string `json:"target_path"`
+	Uid        int64  `json:"uid"`
+	Gid        int64  `json:"gid"`
+	Action     string `json:"action"`
+	UnixTime   int64  `json:"time"`
 }
 
 type INotifyFileEvent struct {
-	Name string                 `json:"name"`
-	HostId string               `json:"hostIdentifier"`
-	UnixTime int64             `json:"unixTime"`
-	CalendarTime string         `json:"calendarTime"`
-	Action string               `json:"action"`
-	HasNumerics bool            `json:"numerics"`
-	Columns INotifyEventColumns `json:"columns"`
+	Name         string              `json:"name"`
+	HostId       string              `json:"hostIdentifier"`
+	UnixTime     int64               `json:"unixTime"`
+	CalendarTime string              `json:"calendarTime"`
+	Action       string              `json:"action"`
+	HasNumerics  bool                `json:"numerics"`
+	Columns      INotifyEventColumns `json:"columns"`
 }
 
 type INotifyEventColumnsStr struct {
-	TargetPath string    `json:"target_path"`
-	Uid string           `json:"uid"`
-	Gid string           `json:"gid"`
-	Action string        `json:"action"`
-	UnixTime string      `json:"time"`
+	TargetPath string `json:"target_path"`
+	Uid        string `json:"uid"`
+	Gid        string `json:"gid"`
+	Action     string `json:"action"`
+	UnixTime   string `json:"time"`
 }
 
 type INotifyFileEventStr struct {
-	Name string                 `json:"name"`
-	HostId string               `json:"hostIdentifier"`
-	UnixTime int64             `json:"unixTime"`
-	CalendarTime string         `json:"calendarTime"`
-	Action string               `json:"action"`
-	HasNumerics bool            `json:"numerics"`
-	Columns INotifyEventColumnsStr `json:"columns"`
+	Name         string                 `json:"name"`
+	HostId       string                 `json:"hostIdentifier"`
+	UnixTime     int64                  `json:"unixTime"`
+	CalendarTime string                 `json:"calendarTime"`
+	Action       string                 `json:"action"`
+	HasNumerics  bool                   `json:"numerics"`
+	Columns      INotifyEventColumnsStr `json:"columns"`
 }
 
 func (t *INotifyFileEventStr) ToTyped() *INotifyFileEvent {
@@ -351,7 +350,6 @@ func (t *EsFileEventStr) ToTyped() *EsFileEvent {
 	return ret
 }
 
-
 /*
 {"name":"bpf_socket_events","hostIdentifier":"ubuntu","calendarTime":"Mon May 15 21:11:37 2023 UTC","unixTime":1684185097,"epoch":0,"counter":7816,"numerics":false,
   "decorations":{"host_uuid":"48754d56-277e-7cb6-dd7b-f58673f0c7fd","username":"amscwx"},"columns":{
@@ -361,57 +359,57 @@ func (t *EsFileEventStr) ToTyped() *EsFileEvent {
 */
 
 type BpfSocketEventColumnsStr struct {
-	Pid string           `json:"pid"`
-	Tid string           `json:"tid"`
-	Uid string           `json:"uid"`
-	Gid string           `json:"gid"`
-	RemoteAddr string    `json:"remote_address"`
-	RemotePort string    `json:"remote_port"`
-	LocalAddr string     `json:"local_address"`
-	LocalPort string     `json:"local_port"`
-	UptimeNanos string   `json:"ntime"`
-	Family string        `json:"family"` // AF_INET, etc
-	ParentPid string     `json:"parent"`
-	ExePath string       `json:"path"`
-	Protocol string      `json:"protocol"`
-	SysCall string       `json:"syscall"`
+	Pid         string `json:"pid"`
+	Tid         string `json:"tid"`
+	Uid         string `json:"uid"`
+	Gid         string `json:"gid"`
+	RemoteAddr  string `json:"remote_address"`
+	RemotePort  string `json:"remote_port"`
+	LocalAddr   string `json:"local_address"`
+	LocalPort   string `json:"local_port"`
+	UptimeNanos string `json:"ntime"`
+	Family      string `json:"family"` // AF_INET, etc
+	ParentPid   string `json:"parent"`
+	ExePath     string `json:"path"`
+	Protocol    string `json:"protocol"`
+	SysCall     string `json:"syscall"`
 }
 
 type BpfSocketEventColumns struct {
-	Pid int64           `json:"pid"`
-	Tid int64           `json:"tid"`
-	Uid int64           `json:"uid"`
-	Gid int64           `json:"gid"`
-	RemoteAddr string   `json:"remote_address"`
-	RemotePort int      `json:"remote_port"`
-	LocalAddr string    `json:"local_address"`
-	LocalPort int       `json:"local_port"`
-	UptimeNanos uint64  `json:"ntime"`
-	Family int          `json:"family"` // AF_INET, etc
-	ParentPid int64     `json:"parent"`
-	ExePath string      `json:"path"`
-	Protocol int        `json:"protocol"`
-	SysCall string      `json:"syscall"`
+	Pid         int64  `json:"pid"`
+	Tid         int64  `json:"tid"`
+	Uid         int64  `json:"uid"`
+	Gid         int64  `json:"gid"`
+	RemoteAddr  string `json:"remote_address"`
+	RemotePort  int    `json:"remote_port"`
+	LocalAddr   string `json:"local_address"`
+	LocalPort   int    `json:"local_port"`
+	UptimeNanos uint64 `json:"ntime"`
+	Family      int    `json:"family"` // AF_INET, etc
+	ParentPid   int64  `json:"parent"`
+	ExePath     string `json:"path"`
+	Protocol    int    `json:"protocol"`
+	SysCall     string `json:"syscall"`
 }
 
 type BpfSocketEventStr struct {
-	Name string                 `json:"name"`
-	HostId string               `json:"hostIdentifier"`
-	UnixTime int64             `json:"unixTime"`
-	CalendarTime string         `json:"calendarTime"`
-	Action string               `json:"action"`
-	HasNumerics bool            `json:"numerics"`
-	Columns BpfSocketEventColumnsStr `json:"columns"`
+	Name         string                   `json:"name"`
+	HostId       string                   `json:"hostIdentifier"`
+	UnixTime     int64                    `json:"unixTime"`
+	CalendarTime string                   `json:"calendarTime"`
+	Action       string                   `json:"action"`
+	HasNumerics  bool                     `json:"numerics"`
+	Columns      BpfSocketEventColumnsStr `json:"columns"`
 }
 
 type BpfSocketEvent struct {
-	Name string                 `json:"name"`
-	HostId string               `json:"hostIdentifier"`
-	UnixTime int64             `json:"unixTime"`
-	CalendarTime string         `json:"calendarTime"`
-	Action string               `json:"action"`
-	HasNumerics bool            `json:"numerics"`
-	Columns BpfSocketEventColumns `json:"columns"`
+	Name         string                `json:"name"`
+	HostId       string                `json:"hostIdentifier"`
+	UnixTime     int64                 `json:"unixTime"`
+	CalendarTime string                `json:"calendarTime"`
+	Action       string                `json:"action"`
+	HasNumerics  bool                  `json:"numerics"`
+	Columns      BpfSocketEventColumns `json:"columns"`
 }
 
 func (t *BpfSocketEventStr) ToTyped() *BpfSocketEvent {
@@ -435,14 +433,14 @@ func (t *BpfSocketEventStr) ToTyped() *BpfSocketEvent {
 }
 
 type EventWrapper struct {
-	TableName        string
-	RawJsonStr       string
-	INotifyFileMsg   *INotifyFileEvent
-	BpfProcessMsg    *BpfProcessEvent
-	BpfSocketMsg     *BpfSocketEvent
-	EsProcessEventMsg   *EsProcessEvent
-	EsFileEventMsg			 *EsFileEvent
-	WinEventMsg          *WinEvent
+	TableName         string
+	RawJsonStr        string
+	INotifyFileMsg    *INotifyFileEvent
+	BpfProcessMsg     *BpfProcessEvent
+	BpfSocketMsg      *BpfSocketEvent
+	EsProcessEventMsg *EsProcessEvent
+	EsFileEventMsg    *EsFileEvent
+	WinEventMsg       *WinEvent
 }
 
 // ================================== conversions to simple schema
@@ -457,15 +455,14 @@ func (t *WinEvent) ToSimple() *types.SimpleEvent {
 	fields.Cmdline = data.ProcessEventData.CommandLine
 	fields.ExePath = data.ProcessEventData.ProcessName
 	if len(data.ProcessEventData.NPid) > 2 {
-		fields.Pid, _ = strconv.ParseInt(string(data.ProcessEventData.NPid[2: len(data.ProcessEventData.NPid)]), 16, 64)
+		fields.Pid, _ = strconv.ParseInt(string(data.ProcessEventData.NPid[2:len(data.ProcessEventData.NPid)]), 16, 64)
 	}
 	if len(data.ProcessEventData.Pid) > 2 {
-		fields.ParentPid, _ = strconv.ParseInt(string(data.ProcessEventData.Pid[2: len(data.ProcessEventData.Pid)]),16, 64)
+		fields.ParentPid, _ = strconv.ParseInt(string(data.ProcessEventData.Pid[2:len(data.ProcessEventData.Pid)]), 16, 64)
 	}
 	ret.ProcessFields = fields
 	return ret
 }
-
 
 func (t *EsProcessEvent) ToSimple() *types.SimpleEvent {
 	ret := &types.SimpleEvent{}
@@ -484,22 +481,22 @@ func (t *EsProcessEvent) ToSimple() *types.SimpleEvent {
 
 func (t *EsFileEvent) ToSimple() *types.SimpleEvent {
 	ret := &types.SimpleEvent{}
-	ret.EventType = types.SimpleSchemaFilemod            // Todo: read-only as well?
-	ret.Timestamp = t.Columns.UnixTime*1000000000
+	ret.EventType = types.SimpleSchemaFilemod // Todo: read-only as well?
+	ret.Timestamp = t.Columns.UnixTime * 1000000000
 
 	fields := &types.SimpleFileFields{}
 	fields.TargetPath = t.Columns.Filename
 	//fields.Uid = t.Columns.Uid
 
 	switch t.Columns.EventType {
-	case "create" :
+	case "create":
 		fields.Action = types.SimpleFileActionCreate
-	case "write" :
+	case "write":
 		fields.Action = types.SimpleFileActionOpenWrite
-	case "open" :
+	case "open":
 		ret.EventType = types.SimpleSchemaFileRead
 		fields.Action = types.SimpleFileActionOpenRead
-	case "unlink" :
+	case "unlink":
 		fields.Action = types.SimpleFileActionDelete
 	case "setmode":
 		fields.Action = types.SimpleFileActionChmod
@@ -577,25 +574,25 @@ func (t *BpfSocketEvent) ToSimple() *types.SimpleEvent {
 
 func (t *INotifyFileEvent) ToSimple() *types.SimpleEvent {
 	ret := &types.SimpleEvent{}
-	ret.EventType = types.SimpleSchemaFilemod            // Todo: read-only as well?
-	ret.Timestamp = t.Columns.UnixTime*1000000000
+	ret.EventType = types.SimpleSchemaFilemod // Todo: read-only as well?
+	ret.Timestamp = t.Columns.UnixTime * 1000000000
 
 	fields := &types.SimpleFileFields{}
 	fields.TargetPath = t.Columns.TargetPath
 	//fields.Uid = t.Columns.Uid
 
 	switch t.Columns.Action {
-	case "CREATED" :
+	case "CREATED":
 		fields.Action = types.SimpleFileActionCreate
-	case "UPDATED" :
+	case "UPDATED":
 		fields.Action = types.SimpleFileActionOpenWrite
-	case "OPENED" :
+	case "OPENED":
 		ret.EventType = types.SimpleSchemaFileRead
 		fields.Action = types.SimpleFileActionOpenRead
-	case "ACCESSED" :
+	case "ACCESSED":
 		ret.EventType = types.SimpleSchemaFileRead
 		fields.Action = types.SimpleFileActionOpenRead
-	case "DELETED" :
+	case "DELETED":
 		fields.Action = types.SimpleFileActionDelete
 	case "ATTRIBUTES_MODIFIED":
 		fields.Action = types.SimpleFileActionChmod

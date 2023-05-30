@@ -9,11 +9,11 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
 	"time"
-	"path/filepath"
 
 	types "github.com/secureworks/atomic-harness/pkg/types"
 )
@@ -21,18 +21,18 @@ import (
 const (
 	LinuxResultsPath = "/var/log/osquery/osqueryd.results.log"
 	MacOSResultsPath = "/var/log/osquery/osqueryd.results.log"
-	WinResultsPath = "C:\\Program Files\\osquery\\log\\osqueryd.results.log"
+	WinResultsPath   = "C:\\Program Files\\osquery\\log\\osqueryd.results.log"
 )
 
 var (
-	l                     = log.New(os.Stderr, "telemcat ", log.LstdFlags)
-	gVerbose = false
-	gTelemetryOutputFile  = os.Stdout
-	gSimpleTelemetryOutputFile  = os.Stdout
+	l                          = log.New(os.Stderr, "telemcat ", log.LstdFlags)
+	gVerbose                   = false
+	gTelemetryOutputFile       = os.Stdout
+	gSimpleTelemetryOutputFile = os.Stdout
 
-	gTotalMessages        = uint64(0)
-	gTimeRangeStart = int64(0)
-	gTimeRangeEnd = int64(0)
+	gTotalMessages   = uint64(0)
+	gTimeRangeStart  = int64(0)
+	gTimeRangeEnd    = int64(0)
 	gSystemStartTime = uint64(0)
 
 	// {"name":"file_events","host
@@ -57,7 +57,6 @@ func init() {
 	flag.StringVar(&flagOutputSuffix, "suffix", "", "optional suffix for files telemetry<suffix>.json and simple_telemetry<suffix>.json")
 }
 
-
 func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 	retval := &EventWrapper{}
 
@@ -78,7 +77,7 @@ func ParseEvent(rawJsonString string) (*EventWrapper, error) {
 
 	if !strings.HasSuffix(retval.TableName, "_events") {
 		if gVerbose {
-			fmt.Println("table name:",retval.TableName,"XXX")
+			fmt.Println("table name:", retval.TableName, "XXX")
 		}
 		return nil, nil
 	}
@@ -251,7 +250,7 @@ func HandleEvent(evt *EventWrapper) {
 		t, _ := time.Parse(time.RFC3339, evt.WinEventMsg.Columns.DateTime)
 
 		if InSpecifiedTimeRangeSec(t.Unix()) {
-			if (evt.WinEventMsg.Columns.Eventid == "4688"){
+			if evt.WinEventMsg.Columns.Eventid == "4688" {
 				IncludeEvent(evt.RawJsonStr, evt.WinEventMsg.ToSimple())
 			}
 		}
@@ -264,17 +263,17 @@ func HandleEvent(evt *EventWrapper) {
  * for each line in osqueryd.results.log, parse and handle event
  */
 func processFile(path string) {
-    file, err := os.Open(path)
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer file.Close()
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
-    scanner := bufio.NewScanner(file)
-    for scanner.Scan() {
-    	line := scanner.Text()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
 
-		evt,err := ParseEvent(line)
+		evt, err := ParseEvent(line)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -282,11 +281,11 @@ func processFile(path string) {
 			continue
 		}
 		HandleEvent(evt)
-    }
+	}
 
-    if err := scanner.Err(); err != nil {
-        fmt.Println("Error:", err)
-    }
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error:", err)
+	}
 }
 
 /*
@@ -300,7 +299,7 @@ func ParseTimeRangeArg(s string, tstart *int64, tend *int64) {
 	if 0 == len(s) {
 		return
 	}
-	a := strings.SplitN(s,",",2)
+	a := strings.SplitN(s, ",", 2)
 	if len(a) != 2 {
 		return
 	}
@@ -332,7 +331,7 @@ func GetLinuxStartTimestamp() uint64 {
 		fmt.Println("ERROR: unable to load local TZ", err)
 		return 0
 	}
-	cmd := exec.Command("uptime","-s")
+	cmd := exec.Command("uptime", "-s")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Println("ERROR: unable to run 'uptime -s'", err)
@@ -390,16 +389,16 @@ func main() {
 		var err error
 
 		outpath := filepath.FromSlash(flagResultsPath + "/telemetry" + flagOutputSuffix + ".json")
-		gTelemetryOutputFile,err = os.OpenFile(outpath, os.O_CREATE|os.O_WRONLY, 0644)
+		gTelemetryOutputFile, err = os.OpenFile(outpath, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			fmt.Println("ERROR: unable to create outfile",outpath, err)
+			fmt.Println("ERROR: unable to create outfile", outpath, err)
 			os.Exit(int(types.StatusTelemetryToolFailure))
 		}
 
 		outpath = filepath.FromSlash(flagResultsPath + "/simple_telemetry" + flagOutputSuffix + ".json")
-		gSimpleTelemetryOutputFile,err = os.OpenFile(outpath, os.O_CREATE|os.O_WRONLY, 0644)
+		gSimpleTelemetryOutputFile, err = os.OpenFile(outpath, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			fmt.Println("ERROR: unable to create outfile",outpath, err)
+			fmt.Println("ERROR: unable to create outfile", outpath, err)
 			os.Exit(int(types.StatusTelemetryToolFailure))
 		}
 	}
@@ -419,7 +418,7 @@ func main() {
 	// read in osqueryd.results file
 
 	if len(files) > 0 {
-		for _,f := range files {
+		for _, f := range files {
 			processFile(f)
 		}
 	} else {
@@ -430,7 +429,7 @@ func main() {
 			fmt.Println("file does not exist", flagTelemPath)
 			os.Exit(2)
 		} else if err != nil {
-			fmt.Println("IO error",err," file:", flagTelemPath)
+			fmt.Println("IO error", err, " file:", flagTelemPath)
 			os.Exit(2)
 		}
 
