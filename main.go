@@ -45,6 +45,7 @@ var flagVerbose bool
 var flagTimeRangeStr string
 var flagClean bool
 var flagPrepareMode bool
+var flagOutputSuffix string
 
 func init() {
 	flag.BoolVar(&flagFetch, "fetch", false, "gather all event telemetry in time range. output to telemetry.json and simple_telemetry.json")
@@ -53,6 +54,7 @@ func init() {
 	flag.StringVar(&flagTimeRangeStr, "ts", "", "start,end unix timestamps")
 	flag.BoolVar(&flagClean, "clearcache", false, "flag not applicable")
 	flag.BoolVar(&flagPrepareMode, "prepare", false, "called by harness before a run of tests")
+	flag.StringVar(&flagOutputSuffix, "suffix", "", "optional suffix for files telemetry<suffix>.json and simple_telemetry<suffix>.json")
 }
 
 
@@ -387,15 +389,15 @@ func main() {
 	if flagFetch {
 		var err error
 
-		outpath := filepath.FromSlash(flagResultsPath + "/telemetry.json")
-		gTelemetryOutputFile,err = os.OpenFile(outpath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		outpath := filepath.FromSlash(flagResultsPath + "/telemetry" + flagOutputSuffix + ".json")
+		gTelemetryOutputFile,err = os.OpenFile(outpath, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			fmt.Println("ERROR: unable to create outfile",outpath, err)
 			os.Exit(int(types.StatusTelemetryToolFailure))
 		}
 
-		outpath = filepath.FromSlash(flagResultsPath + "/simple_telemetry.json")
-		gSimpleTelemetryOutputFile,err = os.OpenFile(outpath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		outpath = filepath.FromSlash(flagResultsPath + "/simple_telemetry" + flagOutputSuffix + ".json")
+		gSimpleTelemetryOutputFile,err = os.OpenFile(outpath, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			fmt.Println("ERROR: unable to create outfile",outpath, err)
 			os.Exit(int(types.StatusTelemetryToolFailure))
